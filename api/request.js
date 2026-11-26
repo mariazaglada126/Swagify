@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }
   const ig = String((body && body.instagram) || '').replace(/^@/, '').trim();
   if (!/^[A-Za-z0-9._]{1,30}$/.test(ig)) return res.status(400).json({ ok: false, error: 'bad_instagram' });
-  const lines = Array.isArray(body.lines) ? body.lines.slice(0, 12).map((l) => String(l).slice(0, 80)) : [];
+  const lines = Array.isArray(body.lines) ? body.lines.slice(0, 40).map((l) => String(l).slice(0, 120)) : [];
   const price = String(body.price || '').slice(0, 20);
   const text = `🆕 <b>New Swagify request</b>\n\n👤 Instagram: <a href="https://instagram.com/${esc(ig)}">@${esc(ig)}</a>\n\n${lines.map((l) => '• ' + esc(l)).join('\n')}\n\n💰 Estimate: <b>${esc(price)}</b>`;
   try {

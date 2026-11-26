@@ -149,8 +149,41 @@ legend{font-weight:700;font-size:15px;margin-bottom:12px}
 .view{position:relative;aspect-ratio:1/1;border-radius:22px;overflow:hidden;background:radial-gradient(circle at 50% 70%,#ffffff 0,#bfe9fa 40%,#42c0ef 100%);cursor:grab}
 .view canvas{display:block}
 .view .badge{position:absolute;left:12px;top:12px;background:var(--ink);color:#fff;font-weight:700;font-size:13px;padding:5px 12px;border-radius:999px;pointer-events:none}
-.view .spin{position:absolute;right:12px;top:12px;font-size:12px;font-weight:700;color:var(--ink);background:rgba(255,255,255,.75);padding:5px 10px;border-radius:999px;pointer-events:none}
+.view .spin{position:absolute;right:12px;top:12px;z-index:2;font-size:12px;font-weight:700;color:var(--ink);background:rgba(255,255,255,.75);padding:5px 10px;border-radius:999px;pointer-events:none}
 .view.busy::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,.25)}
+.check{display:flex;align-items:center;gap:12px;margin:16px 0 0;font-weight:700;font-size:16px;cursor:pointer;min-height:44px}
+.check input{appearance:none;width:26px;height:26px;border:2.5px solid var(--ink);border-radius:8px;background:#fff;display:grid;place-items:center;margin:0;cursor:pointer;flex:none}
+.check input:checked{background:var(--ink)}
+.check input:checked::after{content:'';width:11px;height:6px;border:3px solid var(--cyan);border-top:0;border-right:0;transform:translateY(-2px) rotate(-45deg)}
+.hint2{font-size:14px;color:#555;margin:8px 0 0}
+.colors{margin-top:12px}
+.items{display:flex;flex-direction:column;gap:10px}
+.item{background:#fff;border:2.5px solid var(--ink);border-radius:20px;overflow:hidden}
+.item summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;font-weight:700;min-height:48px}
+.item summary::-webkit-details-marker{display:none}
+.item summary small{font-weight:500;color:#555;text-align:right}
+.item summary::after{content:'+';font-size:22px;line-height:1}
+.item[open] summary::after{content:'−'}
+.item .body{padding:4px 18px 18px;display:flex;flex-direction:column;gap:14px;border-top:1.5px dashed #ccc}
+.item .lbl{font-size:13px;font-weight:700;margin:10px 0 6px;color:#444}
+.item .chip{min-height:44px;padding:8px 14px;font-size:14px}
+.item .chip.two{padding:8px 14px}
+.item .sw{width:40px;height:40px}
+.batch{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:#fff;border:2.5px solid var(--ink);border-radius:20px;padding:12px 14px}
+.batch .step button{width:44px;height:44px}
+.batch .step input{width:52px}
+.batch .rm{margin-left:auto;width:44px;height:44px;border-radius:50%;border:2px solid #bbb;background:#fff;cursor:pointer;color:var(--ink);display:grid;place-items:center}
+.addb{align-self:flex-start;font:700 15px 'Space Grotesk';min-height:44px;padding:10px 18px;border-radius:999px;border:2.5px dashed var(--ink);background:transparent;cursor:pointer;color:var(--ink)}
+.left{font-size:14px;font-weight:700}
+.left.bad{color:#b3261e}
+.vtools{position:absolute;right:12px;bottom:12px;display:flex;gap:8px;z-index:2}
+.vtools button{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.9);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.vtools button:hover{background:#fff}
+.vtools .on-out{display:none}
+.vfull .nav{display:none}.vfull .calc .total{z-index:80}
+.view.full{position:fixed;inset:12px;z-index:70;aspect-ratio:auto;border-radius:28px;box-shadow:0 0 0 100vmax rgba(10,10,10,.75)}
+.view.full .on-in{display:none}.view.full .on-out{display:block}
+.view .spin{position:absolute;right:12px;top:12px}
 .ex{font-size:12px;color:#a9a9a9;margin:-6px 0 0}
 .total ul{margin:0;padding:0;list-style:none;color:#d4d4d4;font-size:15px}
 .total ul li::before{content:'— '}
@@ -208,7 +241,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
   <div class="poster">
     <div class="word" role="img" aria-label="Swagify"></div>
     <ul class="side l" aria-hidden="true"><li>Sculpt</li><li>Paint</li><li>Drip</li></ul>
-    <ul class="side r" aria-hidden="true"><li>One of one</li><li>Street</li><li>Custom</li></ul>
+    <ul class="side r" aria-hidden="true"><li>Always</li><li>Stay</li><li>Swag</li></ul>
     <div class="fallback" role="img" aria-label="Swagify mascot logo"></div>
     <div id="stage" data-model="figure-hd.glb" role="img" aria-label="3D model of a Swagify handmade figure, turning as you scroll"></div>
     <p id="loader">Loading figure <b>0%</b></p>
@@ -242,35 +275,51 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
         <button type="button" role="tab" id="tKey" aria-selected="false">Keychains</button>
       </div>
       <div id="pFig" class="opts" role="tabpanel" aria-labelledby="tFig">
-        <fieldset><legend>Size</legend><div class="chips" data-group="size"></div></fieldset>
-        <fieldset><legend>Details</legend><div class="chips" data-group="details"></div></fieldset>
-        <fieldset><legend>Painting</legend><div class="chips" data-group="paint"></div></fieldset>
         <fieldset><legend>Quantity</legend>
           <div class="qty">
             <div class="step"><button type="button" id="qm" aria-label="Fewer">−</button><input id="q" type="number" min="1" max="999" value="1" aria-label="Quantity"><button type="button" id="qp" aria-label="More">+</button></div>
             <div class="tiers" id="tiers"><span data-t="3">3+ · −5%</span><span data-t="6">6+ · −10%</span><span data-t="10">10+ · −18%</span></div>
           </div>
+          <label class="check" id="customWrap" hidden><input type="checkbox" id="custom"><span>Customize each figure separately</span></label>
+          <p class="hint2" id="customHint" hidden></p>
         </fieldset>
+        <div id="globalOpts" class="opts">
+          <fieldset><legend>Size</legend><div class="chips" data-group="size"></div></fieldset>
+          <fieldset><legend>Details</legend><div class="chips" data-group="details"></div></fieldset>
+          <fieldset><legend>Painting</legend><div class="chips" data-group="paint"></div><div class="chips colors" data-group="color"></div></fieldset>
+        </div>
+        <div id="items" class="items" hidden></div>
         <fieldset><legend>Extras</legend><div class="chips" data-group="fextras"></div></fieldset>
       </div>
       <div id="pKey" class="opts" role="tabpanel" aria-labelledby="tKey" hidden>
         <fieldset><legend>Pack</legend><div class="chips" data-group="pack"></div></fieldset>
-        <fieldset><legend>Color</legend><div class="chips" data-group="color"></div><p class="swname" id="swname"></p></fieldset>
+        <fieldset><legend>Color</legend>
+          <div id="kSingle"><div class="chips colors" data-group="kcolor"></div><p class="swname" id="swname"></p></div>
+          <label class="check"><input type="checkbox" id="kcustom"><span>Mix colors in this pack</span></label>
+          <div id="batches" class="items" hidden></div>
+        </fieldset>
         <fieldset><legend>Painting</legend><div class="chips"><button type="button" class="chip" aria-pressed="true">Solid color <em>$0</em></button></div></fieldset>
         <fieldset><legend>Extras</legend><div class="chips" data-group="kextras"></div></fieldset>
       </div>
     </div>
     <aside class="total" aria-label="Your order">
       <div class="view" id="calcView" data-low="low.glb" data-med="med.glb" data-high="figure-hd.glb" role="img" aria-label="3D preview that changes with your options">
-        <span class="badge" id="vbadge">15 cm</span><span class="spin">Drag to spin</span>
+        <span class="badge" id="vbadge">15 cm</span>
+        <div class="vtools">
+          <button type="button" id="vzin" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button type="button" id="vzout" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <button type="button" id="vfull" aria-label="Open full screen"><svg class="on-in" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="on-out" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <span class="spin">Drag to spin</span>
       </div>
-      <p class="ex">Example only — your order is made from your own character.</p>
+      <p class="ex">Example only — your order is made from your own character. Preview shows up to 10 pieces.</p>
       <ul id="sum"></ul>
       <div>
         <p class="sub">Estimated price</p>
         <p class="price" id="total" aria-live="polite">$0</p>
         <p class="sub" id="note">Final price confirmed in DM.</p>
       </div>
+      <p class="err" id="calcErr" role="alert"></p>
       <button class="btn" id="open" type="button">Leave a request</button>
     </aside>
   </div>
@@ -416,52 +465,143 @@ new IntersectionObserver((es,ob)=>{
 },{threshold:.45}).observe(deck);
 
 /* ---------- calculator ---------- */
-const S={mode:'figure',size:15,details:'medium',painted:true,qty:1,fx:new Set(),pack:10,color:'Blue',kx:new Set()};
-function chip(group,id,on,label,extra=''){return `<button type="button" class="chip${extra}" aria-pressed="${on}" data-g="${group}" data-id="${id}">${label}</button>`}
+const COLORS=[['White','#ffffff'],['Black','#1b1b1b'],['Yellow','#ffd23f'],['Orange','#ff8a1f'],['Red','#e5322d'],['Blue','#2f6fe0'],['Pink','#ff8fc2'],['Green','#3fbf6a']];
+const hexOf=n=>COLORS.find(c=>c[0]===n)[1];
+const PAINT=[{id:'unpainted',l:'Unpainted',p:0},{id:'painted',l:'Painted',p:30},{id:'solid',l:'Solid color',p:0}];
+const MAXI=20;
+const S={mode:'figure',g:{size:15,details:'medium',paint:'painted',color:'Blue'},qty:1,custom:false,items:[],open:new Set([0]),fx:new Set(),
+  pack:10,kcolor:'Blue',kcustom:false,batches:[],kx:new Set()};
+const itemPrice=it=>F.size.find(o=>o.id===it.size).p+(it.paint==='painted'?30:0);
+const paintLabel=it=>it.paint==='solid'?`Solid ${it.color.toLowerCase()}`:PAINT.find(p=>p.id===it.paint).l;
+const sizeL=id=>F.size.find(o=>o.id===id).l;
+const detL=id=>F.details.find(o=>o.id===id).l;
+function figItems(){return S.custom?S.items:Array.from({length:S.qty},()=>S.g)}
+function syncItems(){
+  if(!S.custom)return;
+  while(S.items.length<S.qty)S.items.push({...(S.items[S.items.length-1]||S.g)});
+  S.items.length=S.qty;
+}
+function chip(group,id,on,label,extra='',idx=''){return `<button type="button" class="chip${extra}" aria-pressed="${on}" data-g="${group}" data-id="${id}"${idx!==''?` data-n="${idx}"`:''}>${label}</button>`}
+function swatches(group,cur,idx=''){return COLORS.map(([n,h])=>`<button type="button" class="sw" aria-pressed="${cur===n}" aria-label="${n}" title="${n}" data-g="${group}" data-id="${n}"${idx!==''?` data-n="${idx}"`:''} style="background:${h}"></button>`).join('')}
+function optsHTML(o,idx,mini){
+  const two=mini?' two':' two';
+  return {
+    size:F.size.map(x=>chip('size',x.id,o.size===x.id,`${x.l} <em>${x.from?'from ':''}$${x.p}</em>`,'',idx)).join(''),
+    details:F.details.map(x=>chip('details',x.id,o.details===x.id,mini?x.l:`${x.l}<small>${x.d}</small>`,mini?'':two,idx)).join(''),
+    paint:PAINT.map(x=>chip('paint',x.id,o.paint===x.id,`${x.l} <em>${x.p?'+$'+x.p:'$0'}</em>`,'',idx)).join(''),
+    color:o.paint==='solid'?swatches('color',o.color,idx):''
+  };
+}
 function render(){
   const q=(g,h)=>document.querySelector(`[data-group=${g}]`).innerHTML=h;
-  q('size',F.size.map(o=>chip('size',o.id,S.size===o.id,`${o.l} <em>${o.from?'from ':''}$${o.p}</em>`)).join(''));
-  q('details',F.details.map(o=>chip('details',o.id,S.details===o.id,`${o.l}<small>${o.d}</small>`,' two')).join(''));
-  q('paint',F.paint.map(o=>chip('paint',o.id,S.painted===o.id,`${o.l} <em>${o.p?'+$'+o.p:'$0'}</em>`)).join(''));
+  // figures
+  syncItems();
+  const g=optsHTML(S.g,'',false);
+  q('size',g.size);q('details',g.details);q('paint',g.paint);q('color',g.color);
   q('fextras',F.fextras.map(o=>chip('fx',o.id,S.fx.has(o.id),`${o.l} <em>${o.p?'+$'+o.p:'+'+o.pct+'%'}</em>`)).join(''));
-  q('pack',K.pack.map(o=>chip('pack',o.id,S.pack===o.id,`${o.id} pcs <em>$${o.p}</em>`)).join(''));
-  q('color',K.color.map(([n,h])=>`<button type="button" class="sw" aria-pressed="${S.color===n}" aria-label="${n}" data-g="color" data-id="${n}" style="background:${h}"></button>`).join(''));
-  q('kextras',K.kextras.map(o=>chip('kx',o.id,S.kx.has(o.id),`${o.l} <em>${o.p?'+$'+o.p:'+'+o.pct+'%'}</em>`)).join(''));
-  $('swname').textContent=`Selected: ${S.color}`;
   $('q').value=S.qty;
   document.querySelectorAll('#tiers span').forEach(s=>s.classList.toggle('on',disc(S.qty)>0&&+s.dataset.t===(S.qty>=10?10:S.qty>=6?6:3)));
-  let total,lines,from=false,badge;
+  $('customWrap').hidden=S.qty<2;
+  $('custom').checked=S.custom;$('custom').disabled=S.qty>MAXI;
+  $('customHint').hidden=S.qty<=MAXI;
+  $('customHint').textContent=`Up to ${MAXI} figures can be set up one by one here — for bigger orders, tell us the mix in DM.`;
+  $('globalOpts').hidden=S.custom;$('items').hidden=!S.custom;
+  if(S.custom){
+    $('items').innerHTML=S.items.map((it,i)=>{const o=optsHTML(it,i,true);
+      return `<details class="item" data-n="${i}"${S.open.has(i)?' open':''}><summary>Figure ${i+1}<small>${sizeL(it.size)} · ${detL(it.details)} · ${paintLabel(it)}</small></summary>
+      <div class="body"><div><p class="lbl">Size</p><div class="chips">${o.size}</div></div><div><p class="lbl">Details</p><div class="chips">${o.details}</div></div><div><p class="lbl">Painting</p><div class="chips">${o.paint}</div>${o.color?`<div class="chips colors">${o.color}</div>`:''}</div></div></details>`}).join('');
+  }
+  // keychains
+  q('pack',K.pack.map(o=>chip('pack',o.id,S.pack===o.id,`${o.id} pcs <em>$${o.p}</em>`)).join(''));
+  q('kcolor',swatches('kcolor',S.kcolor));
+  q('kextras',K.kextras.map(o=>chip('kx',o.id,S.kx.has(o.id),`${o.l} <em>${o.p?'+$'+o.p:'+'+o.pct+'%'}</em>`)).join(''));
+  $('swname').textContent=`Selected: ${S.kcolor}`;
+  $('kcustom').checked=S.kcustom;$('kSingle').hidden=S.kcustom;$('batches').hidden=!S.kcustom;
+  const assigned=S.batches.reduce((a,b)=>a+b.count,0);
+  if(S.kcustom){
+    $('batches').innerHTML=S.batches.map((b,i)=>`<div class="batch"><div class="chips">${swatches('bcolor',b.color,i)}</div>
+      <div class="step"><button type="button" data-g="bminus" data-n="${i}" aria-label="Fewer ${b.color}">−</button><input type="number" min="0" max="${S.pack}" value="${b.count}" data-g="bcount" data-n="${i}" aria-label="${b.color} keychains"><button type="button" data-g="bplus" data-n="${i}" aria-label="More ${b.color}">+</button></div>
+      ${S.batches.length>1?`<button type="button" class="rm" data-g="brm" data-n="${i}" aria-label="Remove ${b.color}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:''}</div>`).join('')+
+      `<button type="button" class="addb" data-g="badd">+ Add another color</button><p class="left${assigned!==S.pack?' bad':''}">${assigned===S.pack?`All ${S.pack} keychains assigned ✓`:assigned<S.pack?`${S.pack-assigned} of ${S.pack} still need a color`:`${assigned-S.pack} too many — the pack has ${S.pack}`}</p>`;
+  }
+  // totals + preview spec
+  let total,lines,from=false,badge,spec,ok=true;
   if(S.mode==='figure'){
-    const fp=figPrice({size:S.size,painted:S.painted,qty:S.qty,extras:S.fx});total=fp.total;from=fp.from;
-    lines=figLines({size:S.size,details:S.details,painted:S.painted,qty:S.qty,extras:S.fx});
-    badge=`${F.size.find(o=>o.id===S.size).l}${S.qty>1?` · ×${S.qty}`:''}`;
+    const its=figItems();
+    let t=its.reduce((a,it)=>a+itemPrice(it),0)*(1-disc(S.qty)/100);
+    if(S.fx.has('edit'))t+=20;if(S.fx.has('rush'))t*=1.15;
+    total=Math.round(t);from=its.some(it=>it.size===26);
+    const d=disc(S.qty);
+    if(S.custom){
+      lines=[`Figures ×${S.qty}${d?` (−${d}%)`:''} — customized`,...its.map((it,i)=>`#${i+1}: ${sizeL(it.size)} · ${detL(it.details)} · ${paintLabel(it)}`)];
+    }else{
+      lines=[`Figure · ${sizeL(S.g.size)}`,`${detL(S.g.details)} details`,paintLabel(S.g),`Quantity ${S.qty}${d?` (−${d}%)`:''}`];
+    }
+    lines.push(...F.fextras.filter(e=>S.fx.has(e.id)).map(e=>e.l));
+    const sizes=[...new Set(its.map(i=>i.size))];
+    badge=`${sizes.length===1?sizeL(sizes[0]):'Mixed sizes'}${S.qty>1?` · ×${S.qty}`:''}`;
+    spec={mode:'figure',items:its.slice(0,10).map(it=>({size:it.size,details:it.details,paint:it.paint,color:hexOf(it.color)}))};
     $('note').textContent='Details level is priced individually — final price confirmed in DM.';
   }else{
     let t=K.pack.find(o=>o.id===S.pack).p;if(S.kx.has('edit'))t+=20;if(S.kx.has('rush'))t*=1.15;total=Math.round(t);
-    lines=[`Keychains · ${S.pack} pcs`,`Color: ${S.color}`,'Solid color',...K.kextras.filter(e=>S.kx.has(e.id)).map(e=>e.l)];
-    badge=`Keychain · ×${S.pack}`;
+    const mix=S.kcustom?S.batches.filter(b=>b.count>0):[{color:S.kcolor,count:S.pack}];
+    lines=[`Keychains · ${S.pack} pcs`,S.kcustom?`Colors: ${mix.map(b=>`${b.count} ${b.color}`).join(', ')}`:`Color: ${S.kcolor}`,'Solid color',...K.kextras.filter(e=>S.kx.has(e.id)).map(e=>e.l)];
+    badge=`Keychains · ×${S.pack}`;
+    ok=!S.kcustom||assigned===S.pack;
+    // show up to 10, split by color in proportion
+    const n=Math.min(S.pack,10),sum=mix.reduce((a,b)=>a+b.count,0)||1;
+    let parts=mix.map(b=>({color:b.color,k:b.count*n/sum}));parts.forEach(p=>p.f=Math.floor(p.k));
+    let rest=n-parts.reduce((a,p)=>a+p.f,0);parts.slice().sort((a,b)=>(b.k-b.f)-(a.k-a.f)).forEach(p=>{if(rest>0){p.f++;rest--}});
+    spec={mode:'keychain',items:parts.flatMap(p=>Array.from({length:p.f},()=>({color:hexOf(p.color),details:'simple'})))};
+    if(!spec.items.length)spec.items=[{color:hexOf(S.kcolor),details:'simple'}];
     $('note').textContent='Final price confirmed in DM.';
   }
-  S.total=total;S.from=from;S.lines=lines;
+  S.total=total;S.from=from;S.lines=lines;S.ok=ok;
   $('sum').innerHTML=lines.map(l=>`<li>${l}</li>`).join('');
   $('total').innerHTML=`${from?'<small>from </small>':''}$${total}`;
   $('vbadge').textContent=badge;
-  const hex=K.color.find(c=>c[0]===S.color)[1];
-  window.swCalc&&swCalc.update({mode:S.mode==='figure'?'figure':'keychain',size:S.size,details:S.details,painted:S.painted,qty:S.qty,color:hex});
+  $('calcErr').textContent=ok?'':'Assign a color to every keychain in the pack.';
+  S.spec=spec;
+  window.swCalc&&swCalc.update(spec);
+}
+function setOpt(target,g,raw){
+  if(g==='size')target.size=+raw;else if(g==='details')target.details=raw;else if(g==='paint')target.paint=raw;else if(g==='color')target.color=raw;
 }
 document.querySelector('.calc .opts').addEventListener('click',e=>{
-  const b=e.target.closest('[data-g]');if(!b)return;
-  const g=b.dataset.g,raw=b.dataset.id;
-  if(g==='size')S.size=+raw;else if(g==='details')S.details=raw;else if(g==='paint')S.painted=raw==='true';
-  else if(g==='pack')S.pack=+raw;else if(g==='color')S.color=raw;
-  else if(g==='fx'){S.fx.has(raw)?S.fx.delete(raw):S.fx.add(raw)}else if(g==='kx'){S.kx.has(raw)?S.kx.delete(raw):S.kx.add(raw)}
-  render();const n=document.querySelector(`[data-g="${g}"][data-id="${raw}"]`);n&&n.focus();
+  const b=e.target.closest('button[data-g]');if(!b)return;
+  const g=b.dataset.g,raw=b.dataset.id,n=b.dataset.n;
+  if(['size','details','paint','color'].includes(g)){setOpt(n!==undefined?S.items[+n]:S.g,g,raw)}
+  else if(g==='fx'){S.fx.has(raw)?S.fx.delete(raw):S.fx.add(raw)}
+  else if(g==='kx'){S.kx.has(raw)?S.kx.delete(raw):S.kx.add(raw)}
+  else if(g==='pack'){S.pack=+raw;if(S.kcustom&&S.batches.length===1)S.batches[0].count=S.pack}
+  else if(g==='kcolor')S.kcolor=raw;
+  else if(g==='bcolor')S.batches[+n].color=raw;
+  else if(g==='bminus')S.batches[+n].count=Math.max(0,S.batches[+n].count-1);
+  else if(g==='bplus')S.batches[+n].count=Math.min(S.pack,S.batches[+n].count+1);
+  else if(g==='brm')S.batches.splice(+n,1);
+  else if(g==='badd'){const used=S.batches.map(b=>b.color);const next=COLORS.find(c=>!used.includes(c[0]))||COLORS[0];const left=Math.max(0,S.pack-S.batches.reduce((a,b)=>a+b.count,0));S.batches.push({color:next[0],count:left})}
+  else return;
+  render();
+  const sel=n!==undefined?`[data-g="${g}"][data-id="${raw}"][data-n="${n}"]`:`[data-g="${g}"][data-id="${raw}"]`;
+  const f=document.querySelector(sel)||document.querySelector(`[data-g="${g}"][data-n="${n}"]`);f&&f.focus();
 });
-const setQ=v=>{S.qty=Math.max(1,Math.min(999,v|0||1));render()};
+document.querySelector('.calc .opts').addEventListener('change',e=>{
+  if(e.target.dataset.g==='bcount'){const i=+e.target.dataset.n;S.batches[i].count=Math.max(0,Math.min(S.pack,+e.target.value|0));render()}
+});
+$('items').addEventListener('toggle',e=>{const d=e.target.closest('details');if(!d)return;const i=+d.dataset.n;d.open?S.open.add(i):S.open.delete(i)},true);
+const setQ=v=>{S.qty=Math.max(1,Math.min(999,v|0||1));if(S.qty>MAXI)S.custom=false;if(S.qty<2)S.custom=false;render()};
 $('qm').addEventListener('click',()=>setQ(S.qty-1));$('qp').addEventListener('click',()=>setQ(S.qty+1));
 $('q').addEventListener('change',e=>setQ(+e.target.value));
+$('custom').addEventListener('change',e=>{S.custom=e.target.checked;if(S.custom){S.items=[];S.open=new Set([0])}render()});
+$('kcustom').addEventListener('change',e=>{S.kcustom=e.target.checked;if(S.kcustom&&!S.batches.length)S.batches=[{color:S.kcolor,count:S.pack}];render()});
 function tab(m){S.mode=m;$('tFig').setAttribute('aria-selected',m==='figure');$('tKey').setAttribute('aria-selected',m==='keychain');$('pFig').hidden=m!=='figure';$('pKey').hidden=m!=='keychain';render()}
 $('tFig').addEventListener('click',()=>tab('figure'));$('tKey').addEventListener('click',()=>tab('keychain'));
+/* full screen + zoom for the preview */
+const view=$('calcView');
+function setFull(on){view.classList.toggle('full',on);document.body.classList.toggle('lock',on);document.body.classList.toggle('vfull',on);$('vfull').setAttribute('aria-label',on?'Exit full screen':'Open full screen');window.swCalc&&swCalc.setFull(on);if(on)$('vfull').focus()}
+$('vfull').addEventListener('click',()=>setFull(!view.classList.contains('full')));
+$('vzin').addEventListener('click',()=>window.swCalc&&swCalc.zoom(.8));$('vzout').addEventListener('click',()=>window.swCalc&&swCalc.zoom(1.25));
+addEventListener('keydown',e=>{if(e.key==='Escape'&&view.classList.contains('full'))setFull(false)});
 render();addEventListener('load',render);
 
 /* ---------- product popup ---------- */
@@ -471,8 +611,8 @@ function openProduct(i){
   $('pname').textContent=w.name;
   const ex=F.fextras.filter(e=>c.extras.includes(e.id)).map(e=>e.l).join(' + ')||'—';
   $('pspecs').innerHTML=`<dt>Size</dt><dd>${F.size.find(o=>o.id===c.size).l}</dd><dt>Details</dt><dd>${F.details.find(o=>o.id===c.details).l}</dd><dt>Painting</dt><dd>${c.painted?'Painted':'Unpainted'}</dd><dt>Extras</dt><dd>${ex}</dd>`;
-  const fp=figPrice({size:c.size,painted:c.painted,qty:1,extras:new Set(c.extras)});
-  $('pprice').innerHTML=`<small>Price for this setup</small>${fp.from?'from ':''}$${fp.total}`;
+  const pp=itemPrice({size:c.size,paint:c.painted?'painted':'unpainted'});
+  $('pprice').innerHTML=`<small>Price for this setup</small>${c.size===26?'from ':''}$${pp}`;
   slides.innerHTML=`<div class="slide"><div class="viewer" id="viewer"><span class="vload">Loading 3D…</span></div><span class="hint">Drag to rotate · scroll to zoom</span></div>`+
     w.photos.map(p=>`<div class="slide">${p.src?`<img class="photo" src="${p.src}" alt="${w.name}: ${p.label}">`:`<div class="slot">${p.label}<small>Photo slot — ${p.hint}</small></div>`}</div>`).join('');
   slides.scrollLeft=0;upd();
@@ -494,13 +634,13 @@ pm.addEventListener('keydown',e=>{if(e.key==='Escape')closeProduct();if(e.key===
 $('pclose').addEventListener('click',closeProduct);
 pm.addEventListener('click',e=>{if(e.target===pm)closeProduct()});
 $('porder').addEventListener('click',()=>{
-  const c=cur.cfg;S.mode='figure';S.size=c.size;S.details=c.details;S.painted=c.painted;S.qty=c.qty;S.fx=new Set(c.extras);tab('figure');
+  const c=cur.cfg;S.g={size:c.size,details:c.details,paint:c.painted?'painted':'unpainted',color:'Blue'};S.qty=c.qty;S.custom=false;S.fx=new Set(c.extras);tab('figure');
   closeProduct();setTimeout(openReq,320);
 });
 
 /* ---------- request modal ---------- */
 const modal=$('modal'),form=$('form'),done=$('done'),ig=$('ig'),err=$('err');
-function openReq(){form.hidden=false;done.hidden=true;err.textContent='';
+function openReq(){if(S.ok===false){$('calcErr').focus&&$('batches').scrollIntoView({block:'center',behavior:'smooth'});return}form.hidden=false;done.hidden=true;err.textContent='';
   $('mline').textContent=`Your order: ${S.lines.join(', ')} — ${S.from?'from ':''}$${S.total}. We’ll DM you on Instagram to talk details.`;
   modal.hidden=false;ig.focus()}
 function closeReq(){modal.hidden=true;$('open').focus()}

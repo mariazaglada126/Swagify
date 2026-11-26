@@ -140,39 +140,39 @@ function fitTo(el, renderer, camera) {
   const box = document.getElementById('calcView');
   if (box) {
     const urls = { simple: box.dataset.low, medium: box.dataset.med, complex: box.dataset.high };
-    let r, scene, cam, ctl, group, ring, state = null, started = false, visible = false, raf = 0;
-    const clay = new THREE.MeshStandardMaterial({ color: 0xd2d2d0, roughness: 0.55, metalness: 0 });
-    const solid = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35, metalness: 0 });
+    let r, scene, cam, ctl, group, ring, spec = null, started = false, visible = false, raf = 0, token = 0;
+    const clay = new THREE.MeshStandardMaterial({ color: 0xd2d2d0, roughness: 0.55 });
     const metal = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, roughness: 0.25, metalness: 1 });
-    const sizeScale = { 10: 0.52, 15: 0.66, 20: 0.82, 25: 1, 26: 1.08 };
-    let token = 0;
+    const solids = {};
+    const solidMat = (hex) => solids[hex] || (solids[hex] = new THREE.MeshStandardMaterial({ color: hex, roughness: 0.35 }));
+    const sizeScale = { 5: 0.36, 10: 0.52, 15: 0.66, 20: 0.82, 25: 1, 26: 1.08 };
+    const fov = 30, tanH = Math.tan((fov / 2) * Math.PI / 180);
+    let fitDist = 2.2;
 
     function start() {
       started = true;
       try { r = makeRenderer(); } catch (e) { box.classList.add('no3d'); return; }
-      box.appendChild(r.domElement);
+      box.prepend(r.domElement);
       Object.assign(r.domElement.style, { width: '100%', height: '100%', display: 'block', touchAction: 'pan-y' });
-      scene = new THREE.Scene(); addLights(scene, 0x9fe6ff); scene.add(softShadow(1.4));
+      scene = new THREE.Scene(); addLights(scene, 0x9fe6ff);
+      const sh = softShadow(3.2); scene.add(sh);
       const pm = new THREE.PMREMGenerator(r);
       const env = new THREE.Scene(); env.background = new THREE.Color(0x9fd8f0);
       scene.environment = pm.fromScene(env).texture;
-      cam = new THREE.PerspectiveCamera(30, 1, 0.01, 50);
-      cam.position.set(0, 0.55, 2.15);
+      cam = new THREE.PerspectiveCamera(fov, 1, 0.01, 80);
       ctl = new OrbitControls(cam, r.domElement);
-      ctl.target.set(0, 0.45, 0); ctl.enablePan = false; ctl.enableZoom = false; ctl.enableDamping = true;
-      ctl.minPolarAngle = 0.6; ctl.maxPolarAngle = 1.7;
-      ctl.autoRotate = !reduce; ctl.autoRotateSpeed = 2;
+      ctl.enablePan = false; ctl.enableZoom = false; ctl.enableDamping = true;
+      ctl.minPolarAngle = 0.4; ctl.maxPolarAngle = 1.75;
+      ctl.autoRotate = !reduce; ctl.autoRotateSpeed = 1.6;
       ctl.addEventListener('start', () => { ctl.autoRotate = false; });
       group = new THREE.Group(); scene.add(group);
       ring = new THREE.Group();
-      const torus = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.012, 16, 48), metal);
-      torus.position.y = 0.11;
-      const link = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.008, 12, 32), metal);
-      link.rotation.y = Math.PI / 2;
+      const torus = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.012, 16, 48), metal); torus.position.y = 0.11;
+      const link = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.008, 12, 32), metal); link.rotation.y = Math.PI / 2;
       ring.add(torus, link);
-      new ResizeObserver(() => fitTo(box, r, cam)).observe(box);
+      new ResizeObserver(() => { fitTo(box, r, cam); frame(false); }).observe(box);
       fitTo(box, r, cam);
-      if (state) build(state);
+      if (spec) build(spec);
       loop();
     }
     function loop() {
@@ -188,40 +188,88 @@ function fitTo(el, renderer, camera) {
         o.material = mat || o.userData.orig;
       });
     }
-    async function build(s) {
+    // camera distance that fits the whole group (never closer than one 25 cm+ figure)
+    function frame(resetAngle) {
+      if (!cam || !group.children.length) return;
+      const b = new THREE.Box3().setFromObject(group);
+      const size = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
+      const h = Math.max(size.y, 1.1), w = Math.max(size.x, size.z, 0.6);
+      fitDist = Math.max(h / (2 * tanH), w / (2 * tanH * cam.aspect)) * 1.18 + size.z * 0.5;
+      const ty = Math.max(c.y, 0.45);
+      ctl.target.set(0, ty, 0);
+      ctl.minDistance = fitDist * 0.25; ctl.maxDistance = fitDist * 1.6;
+      if (resetAngle) cam.position.set(0, ty + fitDist * 0.08, fitDist);
+      else {
+        const off = cam.position.clone().sub(ctl.target);
+        off.setLength(Math.min(Math.max(off.length(), ctl.minDistance), ctl.maxDistance));
+        cam.position.copy(ctl.target).add(off);
+      }
+    }
+    async function build(sp) {
       const my = ++token;
       box.classList.add('busy');
-      const url = s.mode === 'keychain' ? urls.simple : urls[s.details];
-      let base;
-      try { base = await loadModel(url); } catch (e) { box.classList.add('no3d'); return; }
+      const items = sp.items.slice(0, 10);
+      const many = items.length > 3;
+      const lod = (d) => (sp.mode === 'keychain' ? 'simple' : many ? (d === 'complex' ? 'medium' : 'simple') : d);
+      const need = [...new Set(items.map((it) => urls[lod(it.details)]))];
+      let models;
+      try { models = Object.fromEntries(await Promise.all(need.map(async (u) => [u, await loadModel(u)]))); }
+      catch (e) { box.classList.add('no3d'); return; }
       if (my !== token) return;
+      const prevCount = group.children.length;
       group.clear();
-      if (s.mode === 'keychain') {
-        const k = base.clone(true);
-        solid.color.set(s.color);
-        paint(k, solid);
-        k.scale.setScalar(0.55);
-        const rg = ring.clone(); rg.position.y = 0.57;
-        const kc = new THREE.Group(); kc.add(k, rg); kc.position.y = 0.12;
-        group.add(kc);
-      } else {
-        const sc = sizeScale[s.size] || 0.66;
-        const n = Math.min(s.qty, 3);
-        const gap = 0.42 * sc;
-        for (let i = 0; i < n; i++) {
-          const c = base.clone(true);
-          paint(c, s.painted ? null : clay);
+      const placed = [];
+      for (const it of items) {
+        const base = models[urls[lod(it.details)]];
+        const c = base.clone(true);
+        if (sp.mode === 'keychain') {
+          paint(c, solidMat(it.color));
+          c.scale.setScalar(0.55);
+          const rg = ring.clone(); rg.position.y = 0.57;
+          const kc = new THREE.Group(); kc.add(c, rg); kc.userData.w = 0.3; kc.userData.lift = 0.12;
+          placed.push(kc);
+        } else {
+          paint(c, it.paint === 'painted' ? null : it.paint === 'solid' ? solidMat(it.color) : clay);
+          const sc = sizeScale[it.size] || 0.66;
           c.scale.setScalar(sc);
-          const off = n === 1 ? 0 : (i - (n - 1) / 2) * gap;
-          c.position.set(off, 0, i === Math.floor(n / 2) ? 0.06 : -0.08);
-          group.add(c);
+          c.userData.w = 0.42 * sc; c.userData.lift = 0;
+          placed.push(c);
         }
       }
+      // rows of up to 5, centred; second row sits behind
+      const perRow = 5;
+      for (let row = 0; row * perRow < placed.length; row++) {
+        const rowItems = placed.slice(row * perRow, row * perRow + perRow);
+        const total = rowItems.reduce((a, o) => a + o.userData.w, 0) + 0.06 * (rowItems.length - 1);
+        let x = -total / 2;
+        rowItems.forEach((o) => {
+          o.position.set(x + o.userData.w / 2, o.userData.lift, -row * 0.55);
+          x += o.userData.w + 0.06;
+          group.add(o);
+        });
+      }
+      frame(prevCount === 0 || prevCount !== group.children.length);
       box.classList.remove('busy');
     }
-    window.swCalc = { update(s) { state = s; if (started && r) build(s); } };
+    function zoomBy(k) {
+      if (!cam) return;
+      const off = cam.position.clone().sub(ctl.target);
+      off.setLength(Math.min(Math.max(off.length() * k, ctl.minDistance), ctl.maxDistance));
+      cam.position.copy(ctl.target).add(off);
+      ctl.autoRotate = false;
+    }
+    window.swCalc = {
+      update(sp) { spec = sp; if (started && r) build(sp); },
+      zoom: zoomBy,
+      setFull(on) {
+        if (!ctl) return;
+        ctl.enableZoom = on;
+        r.domElement.style.touchAction = on ? 'none' : 'pan-y';
+        requestAnimationFrame(() => { fitTo(box, r, cam); frame(false); });
+      }
+    };
     new IntersectionObserver((es) => {
-      visible = es[0].isIntersecting;
+      visible = es[0].isIntersecting || box.classList.contains('full');
       if (visible && !started) start();
       else if (visible && r) loop();
     }, { rootMargin: '200px' }).observe(box);
