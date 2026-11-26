@@ -210,8 +210,8 @@ function fitTo(el, renderer, camera) {
       box.classList.add('busy');
       const items = sp.items.slice(0, 10);
       const many = items.length > 3;
-      const lod = (d) => (sp.mode === 'keychain' ? 'simple' : many ? (d === 'complex' ? 'medium' : 'simple') : d);
-      const need = [...new Set(items.map((it) => urls[lod(it.details)]))];
+      const lod = (it) => (it.kind === 'key' ? 'simple' : many ? (it.details === 'complex' ? 'medium' : 'simple') : it.details);
+      const need = [...new Set(items.map((it) => urls[lod(it)]))];
       let models;
       try { models = Object.fromEntries(await Promise.all(need.map(async (u) => [u, await loadModel(u)]))); }
       catch (e) { box.classList.add('no3d'); return; }
@@ -220,9 +220,9 @@ function fitTo(el, renderer, camera) {
       group.clear();
       const placed = [];
       for (const it of items) {
-        const base = models[urls[lod(it.details)]];
+        const base = models[urls[lod(it)]];
         const c = base.clone(true);
-        if (sp.mode === 'keychain') {
+        if (it.kind === 'key') {
           paint(c, solidMat(it.color));
           c.scale.setScalar(0.55);
           const rg = ring.clone(); rg.position.y = 0.57;
