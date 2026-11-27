@@ -98,7 +98,11 @@ h2{font:400 clamp(40px,6vw,80px)/.92 'Archivo Black',sans-serif;margin:0;text-tr
 .viewer .vload{position:absolute;inset:0;display:grid;place-items:center;font-weight:700}
 .viewer.ready .vload{display:none}
 .hint{position:absolute;left:16px;bottom:16px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:999px;pointer-events:none}
-.photo{width:100%;height:100%;object-fit:cover}
+.photo{width:100%;height:100%;object-fit:cover;display:block}
+.slide picture{position:absolute;inset:0}
+.photo.contain{object-fit:contain}
+.slide.white{background:#fff}
+.slide.white picture{inset:14px 14px 76px}
 .slot{width:calc(100% - 48px);height:calc(100% - 48px);border:3px dashed rgba(20,20,20,.3);border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;color:#3a3a3a;font-weight:700}
 .slot small{display:block;font-weight:400;margin-top:6px}
 .arrows{position:absolute;right:16px;bottom:16px;display:flex;gap:10px;align-items:center}
@@ -503,20 +507,24 @@ function figLines(c){
 }
 
 /* ---------- portfolio data: one entry per figure ---------- */
-const PH=[{label:'Finished figure next to a ruler',hint:'shows the real size'},{label:'In an interior',hint:'on a shelf or desk'},{label:'Detail',hint:'close-up'},{label:'Detail',hint:'close-up'}];
+/* Portfolio: one entry per piece, in deck order. Photos: interior, one detail, ruler (wide + narrow crop). */
+const ph=(k,o={})=>[o.noInterior?{slot:'In an interior',hint:'photo coming soon'}:{src:`photos/${k}-interior.webp`,label:'In an interior',fit:'cover'},
+  {src:`photos/${k}-detail.webp`,label:'Detail',fit:'contain'},
+  ...(o.noRuler?[]:[{src:`photos/${k}-ruler.webp`,narrow:`photos/${k}-ruler-narrow.webp`,label:'Size with a ruler',fit:'contain'}])];
 const WORKS=[
-  {name:'Hoodie Kid',img:'nova.webp',model:'figure-hd.glb',tag:'Legendary',c:'#42c0ef',t:'#141414',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},photos:PH},
-  {name:'Pink Daisy',img:'fig1.webp',model:'fig1.glb',tag:'Rare',c:'#f6c9dc',t:'#141414',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},photos:PH},
-  {kind:'key',name:'Swagify Keychain',img:'keychain.webp',model:'keychain.glb',c:'#bfe9fa',t:'#141414',cfg:{size:5,pack:5,color:'Blue'},photos:PH},
-  {name:'Plano',img:'fig2.webp',model:'fig2.glb',tag:'Epic',c:'#e4e4ea',t:'#141414',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},photos:PH},
-  {name:'Graffiti Hood',img:'fig3.webp',model:'fig3.glb',tag:'Legendary',c:'#f1e6d3',t:'#141414',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},photos:PH},
-  {name:'White Angel',img:'fig4.webp',model:'fig4.glb',tag:'Rare',c:'#f4f4f2',t:'#141414',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},photos:PH},
-  {name:'Red Angel',img:'fig5.webp',model:'fig5.glb',tag:'Epic',c:'#24378d',t:'#ffffff',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},photos:PH},
-  {name:'Masked One',img:'fig6.webp',model:'fig6.glb',tag:'Legendary',c:'#2e2d2c',t:'#ffffff',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},photos:PH}
+  {name:'Hoodie Kid',img:'nova.webp',model:'figure-hd.glb',c:'#42c0ef',t:'#141414',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},
+   photos:[{slot:'In an interior',hint:'photo coming soon'},{slot:'Detail',hint:'photo coming soon'},{slot:'Size with a ruler',hint:'photo coming soon'}]},
+  {kind:'key',logo:true,name:'Swagify Keychain',img:'keychain.webp',model:'keychain.glb',c:'#bfe9fa',t:'#141414',cfg:{size:5,pack:5,color:'Blue'},photos:ph('swagkey',{noInterior:true,noRuler:true})},
+  {name:'Plano',img:'fig2.webp',model:'fig2.glb',c:'#e4e4ea',t:'#141414',cfg:{size:10,details:'complex',painted:true,qty:1,extras:[]},photos:ph('plano')},
+  {name:'Graffiti Hood',img:'fig3.webp',model:'fig3.glb',c:'#f1e6d3',t:'#141414',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},photos:ph('graffiti')},
+  {kind:'key',name:'Daisy Keychain',img:'fig1.webp',model:'fig1.glb',c:'#f6c9dc',t:'#141414',cfg:{size:5,pack:5,color:'Pink'},photos:ph('daisy')},
+  {name:'White Angel',img:'fig4.webp',model:'fig4.glb',c:'#f4f4f2',t:'#141414',cfg:{size:20,details:'complex',painted:true,qty:1,extras:[]},photos:ph('whiteangel')},
+  {name:'Red Angel',img:'fig5.webp',model:'fig5.glb',c:'#24378d',t:'#ffffff',cfg:{size:25,details:'complex',painted:true,qty:1,extras:[]},photos:ph('redangel')},
+  {name:'Masked One',img:'fig6.webp',model:'fig6.glb',c:'#2e2d2c',t:'#ffffff',cfg:{size:26,details:'complex',painted:true,qty:1,extras:[]},photos:ph('masked')}
 ];
 const deck=$('deck'),N=WORKS.length;
-const typeLine=w=>w.kind==='key'?`Keychain · ${w.cfg.size} cm · solid color`:`Figure · ${w.cfg.size} cm · ${w.cfg.painted?'painted':'unpainted'}`;
-deck.insertAdjacentHTML('afterbegin',WORKS.map((w,i)=>`<article class="cc${w.kind==='key'?' key':''}" data-i="${i}" style="--c:${w.c};--t:${w.t}" aria-label="${w.name} — open card">
+const typeLine=w=>w.kind==='key'?`Keychain · 5 cm · solid color`:`Figure · ${F.size.find(o=>o.id===w.cfg.size).l} · ${w.cfg.painted?'painted':'unpainted'}`;
+deck.insertAdjacentHTML('afterbegin',WORKS.map((w,i)=>`<article class="cc${w.logo?' key':''}" data-i="${i}" style="--c:${w.c};--t:${w.t}" aria-label="${w.name} — open card">
   <h3>${w.name}</h3>
   <div class="img"><img src="${w.img}" alt="" draggable="false"></div>
   <p class="foot">${typeLine(w)}</p></article>`).join(''));
@@ -720,11 +728,12 @@ function openProduct(i){
     $('pprice').innerHTML=`<small>Price for this setup</small>${c.size===26?'from ':''}$${pp}`;
   }
   slides.innerHTML=`<div class="slide"><div class="viewer" id="viewer"><span class="vload">Loading 3D…</span></div><span class="hint">Drag to rotate · scroll to zoom</span></div>`+
-    w.photos.map(p=>`<div class="slide">${p.src?`<img class="photo" src="${p.src}" alt="${w.name}: ${p.label}">`:`<div class="slot">${p.label}<small>Photo slot — ${p.hint}</small></div>`}</div>`).join('');
+    w.photos.map(p=>p.slot?`<div class="slide"><div class="slot">${p.slot}<small>${p.hint}</small></div></div>`
+      :`<div class="slide${p.fit==='contain'?' white':''}"><picture>${p.narrow?`<source media="(max-aspect-ratio: 1/1)" srcset="${p.narrow}">`:''}<img class="photo ${p.fit}" src="${p.src}" alt="${w.name}: ${p.label}" loading="lazy"></picture><span class="hint">${p.label}</span></div>`).join('');
   slides.scrollLeft=0;upd();
   pm.hidden=false;document.body.classList.add('lock');
   requestAnimationFrame(()=>pm.classList.add('show'));
-  window.swViewer&&swViewer.open($('viewer'),w.model,{key:w.kind==='key'});
+  window.swViewer&&swViewer.open($('viewer'),w.model,{key:!!w.logo});
   $('pclose').focus();
 }
 function closeProduct(){
