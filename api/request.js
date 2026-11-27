@@ -89,6 +89,12 @@ async function handler(req, res) {
    in the Telegram chat and the next number is read from that pinned message. Don't unpin it,
    or numbering restarts at 001. */
 let queue = Promise.resolve();
+// "27.11.2026, 22:47" — Kyiv time, 24-hour clock, as written in Ukraine
+function kyivTime(d = new Date()) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('uk-UA', { timeZone: 'Europe/Kiev', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+    .formatToParts(d).map((x) => [x.type, x.value]));
+  return `${p.day}.${p.month}.${p.year}, ${p.hour}:${p.minute}`;
+}
 async function tg(token, method, payload) {
   const r = await (handler.fetch || fetch)(`https://api.telegram.org/bot${token}/${method}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -108,7 +114,7 @@ async function sendOrder({ token, chat, ig, typed, lines, price }) {
   } catch (e) { num = null; }
   const tag = num ? ` #${String(num).padStart(3, '0')}` : '';
   const typedNote = typed && typed.replace(/^@/, '') !== ig ? `\n✍️ Typed as: ${esc(typed)}` : '';
-  const text = `🆕 <b>New Swagify request${tag}</b>\n\n👤 Instagram: <a href="https://instagram.com/${esc(ig)}">@${esc(ig)}</a>${typedNote}\n\n${lines.map((l) => '• ' + esc(l)).join('\n')}\n\n💰 Estimate: <b>${esc(price)}</b> + shipping`;
+  const text = `🆕 <b>New Swagify request${tag}</b>\n🕒 ${kyivTime()}\n\n👤 Instagram: <a href="https://instagram.com/${esc(ig)}">@${esc(ig)}</a>${typedNote}\n\n${lines.map((l) => '• ' + esc(l)).join('\n')}\n\n💰 Estimate: <b>${esc(price)}</b> + shipping`;
   const sent = await tg(token, 'sendMessage', { chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true });
   if (!sent.ok) return false;
   try {

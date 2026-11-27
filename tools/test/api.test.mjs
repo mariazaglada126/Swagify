@@ -92,3 +92,9 @@ test('nickname is lowercased; what the buyer typed is shown when it differs', as
   assert.match(sent[0].text, /instagram\.com\/mushy\.akk/);
   assert.match(sent[0].text, /Typed as: Mushy\.Akk/);
 });
+
+test('request shows the Kyiv time like 27.11.2026, 22:47', async () => {
+  sent = [];
+  await call({ ...base, __ip: '192.0.2.9', requestId: 'd9d9d9d9-1111-4222-8333-444455556666' });
+  assert.match(sent[0].text, /🕒 \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}/);
+});
