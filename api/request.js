@@ -2,6 +2,10 @@
 // Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Vercel → Project → Settings → Environment Variables.
 // Each request carries a requestId from the browser; "Try again" re-sends the same id, so a retry
 // after a lost response is answered from memory instead of posting the order twice.
+// Who gets the requests: Telegram user @layylyon. Their chat id is filled in once found via /api/request?setup
+const NOTIFY_USERNAME = 'layylyon';
+const DEFAULT_CHAT_ID = '';
+const chatId = () => process.env.TELEGRAM_CHAT_ID || DEFAULT_CHAT_ID;
 const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 const IG = /^(?!\.)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]{1,30}$/;
 const ID = /^[A-Za-z0-9-]{8,64}$/;
@@ -26,7 +30,22 @@ function remember(id) {
 
 async function handler(req, res) {
   // GET /api/request → is Telegram configured? (sends nothing; safe to open in a browser)
-  if (req.method === 'GET') return res.status(200).json({ ok: true, configured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) });
+  if (req.method === 'GET') {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const q = (req.query && req.query.setup !== undefined) || /[?&]setup\b/.test(req.url || '');
+    if (q) {
+      // one-time helper: find the chat id of @layylyon among people who wrote to the bot
+      if (!token) return res.status(200).json({ ok: false, step: 'add TELEGRAM_BOT_TOKEN in Vercel and redeploy' });
+      try {
+        const r = await (handler.fetch || fetch)(`https://api.telegram.org/bot${token}/getUpdates`);
+        const j = await r.json();
+        const chats = (j.result || []).map((u) => (u.message || u.edited_message || {}).chat).filter(Boolean);
+        const me = chats.find((c) => String(c.username || '').toLowerCase() === NOTIFY_USERNAME);
+        return res.status(200).json(me ? { ok: true, chat_id: String(me.id), username: me.username } : { ok: false, step: `write any message to the bot from @${NOTIFY_USERNAME}, then reload` });
+      } catch (e) { return res.status(200).json({ ok: false, step: 'could not reach Telegram, reload in a minute' }); }
+    }
+    return res.status(200).json({ ok: true, configured: !!(token && chatId()) });
+  }
   if (req.method !== 'POST') return res.status(405).json({ ok: false });
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }
@@ -42,7 +61,7 @@ async function handler(req, res) {
   if (limited(ip)) return res.status(429).json({ ok: false, error: 'too_many' });
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chat = process.env.TELEGRAM_CHAT_ID;
+  const chat = chatId();
   if (!token || !chat) return res.status(503).json({ ok: false, error: 'not_configured' });
 
   const lines = Array.isArray(body.lines) ? body.lines.slice(0, 40).map((l) => String(l).slice(0, 120)) : [];
