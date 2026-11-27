@@ -43,7 +43,7 @@ test('photos everywhere, no stuck loaders, quote still works', async ({ page }) 
   await expect(page.locator('#slides img').first()).toHaveAttribute('src', /ruler/);
   await expect(page.locator('#slides')).not.toContainText('Drag');
   await page.click('#porder');
-  await page.fill('#ig', 'no3d.buyer'); await page.click('#send');
+  await page.fill('#ig', 'no3d.buyer'); await page.click('#send'); await page.click('#confSend');
   await expect(page.locator('#done')).toBeVisible();
   expect(calls).toHaveLength(1);
   expect(errors).toEqual([]);

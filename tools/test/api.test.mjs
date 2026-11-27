@@ -6,8 +6,19 @@ const require = createRequire(import.meta.url);
 const handler = require('../../api/request.js');
 process.env.TELEGRAM_BOT_TOKEN = 'test-token';
 process.env.TELEGRAM_CHAT_ID = 'test-chat';
-let sent = [];
-handler.fetch = async (url, init) => { sent.push(JSON.parse(init.body)); return { ok: true }; };
+// fake Telegram: remembers the pinned message like the real chat does
+let sent = [], pinned = null, mid = 100, failSend = false;
+const fakeTg = async (url, init) => {
+  const m = /\/bot[^/]+\/(\w+)/.exec(url)[1], b = init && init.body ? JSON.parse(init.body) : {};
+  const reply = (ok, result) => ({ ok, json: async () => ({ ok, result }) });
+  if (m === 'getMe') return reply(true, { username: 'TestBot' });
+  if (m === 'getChat') return reply(true, pinned ? { pinned_message: pinned } : {});
+  if (m === 'sendMessage') { if (failSend) return reply(false); sent.push(b); return reply(true, { message_id: ++mid, text: b.text }); }
+  if (m === 'pinChatMessage') { const msg = sent.find((x, i) => 101 + i === b.message_id) || sent[sent.length - 1]; pinned = { message_id: b.message_id, text: msg.text }; return reply(true, true); }
+  if (m === 'unpinChatMessage') return reply(true, true);
+  return reply(false);
+};
+handler.fetch = fakeTg;
 const call = (body) => new Promise((resolve) => {
   const res = { code: 0, status(c) { this.code = c; return this; }, json(j) { resolve({ code: this.code, body: j }); } };
   handler({ method: body.__method || 'POST', body, headers: body.__ip ? { 'x-forwarded-for': body.__ip } : {} }, res);
@@ -36,9 +47,9 @@ test('sends once per requestId, retries are deduplicated', async () => {
 test('a failed Telegram call can be retried with the same id', async () => {
   sent = [];
   const id = 'c3d8b4b1-1111-4222-8333-444455556666';
-  handler.fetch = async () => ({ ok: false });
+  failSend = true;
   assert.equal((await call({ ...base, requestId: id })).code, 502);
-  handler.fetch = async (u, init) => { sent.push(JSON.parse(init.body)); return { ok: true }; };
+  failSend = false;
   assert.equal((await call({ ...base, requestId: id })).code, 200);
   assert.equal(sent.length, 1);
 });
@@ -51,7 +62,6 @@ test('GET reports whether Telegram is configured, without sending', async () => 
 
 test('bots are ignored: filled honeypot or instant submit', async () => {
   sent = [];
-  handler.fetch = async (u, init) => { sent.push(JSON.parse(init.body)); return { ok: true }; };
   assert.equal((await call({ ...base, website: 'http://spam', requestId: 'd4e9c5c2-1111-4222-8333-444455556666' })).code, 200);
   assert.equal((await call({ ...base, elapsed: 200, requestId: 'e5f0d6d3-1111-4222-8333-444455556666' })).code, 200);
   assert.equal(sent.length, 0);
@@ -64,4 +74,21 @@ test('rate limit: 5 requests per IP per 10 minutes', async () => {
   assert.deepEqual(codes, [200, 200, 200, 200, 200, 429, 429]);
   assert.equal(sent.length, 5);
   assert.equal((await call({ ...base, __ip: '198.51.100.4', requestId: 'a7b2f8f9-1111-4222-8333-444455556666' })).code, 200);
+});
+
+test('orders are numbered #001, #002 … and wrap after #999', async () => {
+  sent = []; pinned = null;
+  await call({ ...base, __ip: '192.0.2.1', requestId: 'b1b1b1b1-1111-4222-8333-444455556666' });
+  await call({ ...base, __ip: '192.0.2.1', requestId: 'b2b2b2b2-1111-4222-8333-444455556666' });
+  assert.match(sent[0].text, /request #001/); assert.match(sent[1].text, /request #002/);
+  pinned = { message_id: 1, text: 'New Swagify request #999' };
+  await call({ ...base, __ip: '192.0.2.2', requestId: 'b3b3b3b3-1111-4222-8333-444455556666' });
+  assert.match(sent[2].text, /request #001/);
+});
+
+test('nickname is lowercased; what the buyer typed is shown when it differs', async () => {
+  sent = [];
+  await call({ ...base, instagram: 'Mushy.Akk', typed: 'Mushy.Akk ', __ip: '192.0.2.3', requestId: 'c1c1c1c1-1111-4222-8333-444455556666' });
+  assert.match(sent[0].text, /instagram\.com\/mushy\.akk/);
+  assert.match(sent[0].text, /Typed as: Mushy\.Akk/);
 });

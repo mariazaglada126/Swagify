@@ -54,7 +54,7 @@ async function handler(req, res) {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }
   body = body || {};
-  const ig = String(body.instagram || '').replace(/^@/, '').trim();
+  const ig = String(body.instagram || '').replace(/^@/, '').trim().toLowerCase();
   if (!IG.test(ig)) return res.status(400).json({ ok: false, error: 'bad_instagram' });
   const id = String(body.requestId || '');
   if (!ID.test(id)) return res.status(400).json({ ok: false, error: 'bad_request_id' });
@@ -70,19 +70,53 @@ async function handler(req, res) {
 
   const lines = Array.isArray(body.lines) ? body.lines.slice(0, 40).map((l) => String(l).slice(0, 120)) : [];
   const price = String(body.price || '').slice(0, 20);
-  const text = `🆕 <b>New Swagify request</b>\n\n👤 Instagram: <a href="https://instagram.com/${esc(ig)}">@${esc(ig)}</a>\n\n${lines.map((l) => '• ' + esc(l)).join('\n')}\n\n💰 Estimate: <b>${esc(price)}</b> + shipping\n🔖 ${esc(id.slice(0, 8))}`;
+  const typed = String(body.typed || '').slice(0, 80);
   remember(id); // claim the id before sending so a parallel retry can't post twice
+  // one request at a time per warm instance, so two buyers can't grab the same number
+  const job = queue.then(() => sendOrder({ token, chat, ig, typed, lines, price }));
+  queue = job.catch(() => {});
   try {
-    const r = await (handler.fetch || fetch)(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true })
-    });
-    if (!r.ok) { seen.delete(id); return res.status(502).json({ ok: false }); }
+    const ok = await job;
+    if (!ok) { seen.delete(id); return res.status(502).json({ ok: false }); }
     return res.status(200).json({ ok: true });
   } catch (e) {
     seen.delete(id);
     return res.status(502).json({ ok: false });
   }
+}
+
+/* Order numbers 001…999 (then 001 again). There is no database: the bot pins the latest request
+   in the Telegram chat and the next number is read from that pinned message. Don't unpin it,
+   or numbering restarts at 001. */
+let queue = Promise.resolve();
+async function tg(token, method, payload) {
+  const r = await (handler.fetch || fetch)(`https://api.telegram.org/bot${token}/${method}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+  });
+  const j = r.json ? await r.json().catch(() => ({})) : {};
+  return { ok: !!r.ok && j.ok !== false, result: j.result };
+}
+async function sendOrder({ token, chat, ig, typed, lines, price }) {
+  let num = null, prevPin = null;
+  try {
+    const c = await tg(token, 'getChat', { chat_id: chat });
+    const pin = c.result && c.result.pinned_message;
+    const m = pin && /#(\d{3})\b/.exec(pin.text || '');
+    const prev = m ? parseInt(m[1], 10) : 0;
+    num = prev >= 999 ? 1 : prev + 1;
+    prevPin = pin ? pin.message_id : null;
+  } catch (e) { num = null; }
+  const tag = num ? ` #${String(num).padStart(3, '0')}` : '';
+  const typedNote = typed && typed.replace(/^@/, '') !== ig ? `\n✍️ Typed as: ${esc(typed)}` : '';
+  const text = `🆕 <b>New Swagify request${tag}</b>\n\n👤 Instagram: <a href="https://instagram.com/${esc(ig)}">@${esc(ig)}</a>${typedNote}\n\n${lines.map((l) => '• ' + esc(l)).join('\n')}\n\n💰 Estimate: <b>${esc(price)}</b> + shipping`;
+  const sent = await tg(token, 'sendMessage', { chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true });
+  if (!sent.ok) return false;
+  try {
+    if (num && sent.result && sent.result.message_id) {
+      await tg(token, 'pinChatMessage', { chat_id: chat, message_id: sent.result.message_id, disable_notification: true });
+      if (prevPin) await tg(token, 'unpinChatMessage', { chat_id: chat, message_id: prevPin });
+    }
+  } catch (e) { /* numbering is best effort; the request itself was delivered */ }
+  return true;
 }
 module.exports = handler;

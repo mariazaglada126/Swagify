@@ -42,7 +42,7 @@ test('quantity: paste then straight to the quote keeps field, discount, total an
   await expect(page.locator('#mlist')).toContainText('Quantity 63 (−18%)');
   await expect(page.locator('#mtotal')).toHaveText('$2886');
   await page.fill('#ig', 'test.buyer');
-  await page.click('#send');
+  await page.click('#send'); await page.click('#confSend');
   await expect(page.locator('#done')).toBeVisible();
   expect(calls).toHaveLength(1);
   expect(calls[0].price).toBe('$2886');
@@ -131,7 +131,7 @@ test('portfolio → card → Order one like this → quote carries exactly the c
   await page.click('#open');
   await expect(page.locator('#mtotal')).toHaveText('$110');
   await page.fill('#ig', '@graffiti.fan');
-  await page.click('#send');
+  await page.click('#send'); await page.click('#confSend');
   await expect(page.locator('#done')).toBeVisible();
   expect(calls[0].instagram).toBe('graffiti.fan');
   expect(calls[0].price).toBe('$110');
@@ -141,13 +141,13 @@ test('request: nickname validation, sending state, network error, retry without 
   const calls = await mockApi(page, ['network', 'slow']);
   await toCalc(page);
   await page.click('#open');
-  for (const [v, msg] of [['', 'Enter your Instagram'], ['bad name', 'Use only letters'], ['.dot', 'period'], ['a'.repeat(31), '30 characters']]) {
+  for (const [v, msg] of [['', 'Enter your Instagram'], ['bad name', 'no spaces'], ['bad!name', 'Use only letters'], ['.dot', 'period'], ['a'.repeat(31), '30 characters']]) {
     await page.fill('#ig', v); await page.click('#send');
     await expect(page.locator('#err')).toContainText(msg);
   }
   expect(calls).toHaveLength(0);
   await page.fill('#ig', 'https://www.instagram.com/real.buyer_7/');
-  await page.click('#send');
+  await page.click('#send'); await page.click('#confSend');
   await expect(page.locator('#fail')).toBeVisible();
   await page.click('#retry');
   await expect(page.locator('#retry')).toHaveText('Sending…');
@@ -281,4 +281,27 @@ test('slow connection: real "Loading 3D %" counter, then the figure', async ({ p
   await expect(page.locator('body')).toHaveClass(/hero3d/, { timeout: 90_000 });
   await expect(load).toBeHidden();
   await expect(page.locator('.hero-photo')).not.toBeInViewport({ ratio: 0.01 }).catch(() => {}); // photo faded out
+});
+
+test('nickname: Cyrillic look-alikes and capitals are fixed, buyer confirms the profile link', async ({ page }) => {
+  const calls = await mockApi(page);
+  await toCalc(page);
+  await page.click('#open');
+  await page.fill('#ig', 'кузя'); await page.click('#send');
+  await expect(page.locator('#err')).toContainText('Switch your keyboard to English');
+  await page.fill('#ig', 'mushy akk'); await page.click('#send');
+  await expect(page.locator('#err')).toContainText('no spaces');
+  await page.fill('#ig', '@Mushyаkk'); // Cyrillic "а" + capital M
+  await expect(page.locator('#igPrev')).toContainText('instagram.com/mushyakk');
+  await page.click('#send');
+  await expect(page.locator('#igConf')).toBeVisible();
+  await expect(page.locator('#confNick')).toHaveText('mushyakk');
+  await expect(page.locator('#confNote')).toContainText('Cyrillic');
+  await expect(page.locator('#confOpen')).toHaveAttribute('href', 'https://www.instagram.com/mushyakk/');
+  await page.click('#confEdit');
+  await expect(page.locator('#ig')).toBeFocused();
+  await page.fill('#ig', 'mushy.akk'); await page.click('#send'); await page.click('#confSend');
+  await expect(page.locator('#done')).toBeVisible();
+  expect(calls).toHaveLength(1);
+  expect(calls[0].instagram).toBe('mushy.akk');
 });

@@ -313,6 +313,16 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 .mtotal{display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 0;border-top:2px dashed #ccc;padding-top:10px;font-weight:700}
 .mtotal b{font:400 26px 'Archivo Black',sans-serif}
 .osum .ship{color:var(--navy);margin-top:4px}
+.igprev{margin:6px 2px 0;font-size:14px;color:#555;word-break:break-all}
+.igprev b{color:var(--ink)}
+.igconf .lbl{margin:16px 0 4px;font-weight:700}
+.ignick{margin:0;font:400 clamp(24px,6vw,30px)/1.15 'Archivo Black',sans-serif;word-break:break-all}
+.ignote{margin:6px 0 0;font-size:14px;font-weight:700;color:var(--navy)}
+.ignote:empty{display:none}
+.igopen{margin-top:12px;display:inline-flex;gap:8px;align-items:center}
+.igrow{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+.igrow .btn{flex:1 1 140px;justify-content:center;white-space:nowrap}
+.dialog .btn.ghost{background:#fff;color:var(--ink);border-color:var(--ink);box-shadow:4px 5px 0 var(--navy)}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .fine{margin:12px 0 0;font-size:14px;color:#444;text-align:center}
 label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
@@ -519,7 +529,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
     <a class="btn" href="https://www.instagram.com/swagify.figures?fqnt=MTljNGg2ZjVyc2t6Zw%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r=".6" fill="currentColor"/></svg>@swagify.figures</a>
   </div>
 </section>
-<footer><div class="wrap"><span>© 2026 Swagify — Handmade figures · Shipping paid separately</span><span class="marker" style="color:#fff">stay swag ★</span></div><p id="ver" style="margin:8px 0 0;font-size:11px;opacity:.45">v202611272137</p></footer>
+<footer><div class="wrap"><span>© 2026 Swagify — Handmade figures · Shipping paid separately</span><span class="marker" style="color:#fff">stay swag ★</span></div><p id="ver" style="margin:8px 0 0;font-size:11px;opacity:.45">v202611272243</p></footer>
 
 <div class="pm" id="pm" hidden>
   <div class="pbox" role="dialog" aria-modal="true" aria-labelledby="pname">
@@ -549,12 +559,23 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
       <h3 id="mh">Get your quote</h3>
       <p class="mlead">Drop your Instagram nickname. We’ll DM you there to go over your character and the details, then confirm the final price.</p>
       <div class="osum"><p class="lbl">Your order</p><ul id="mlist"></ul><p class="mtotal"><span>Estimated total</span><b id="mtotal"></b></p><p class="ship">Shipping is extra.</p></div>
-      <label for="ig">Your Instagram</label>
+      <div id="igStep">
+      <label for="ig">Your Instagram nickname</label>
       <div class="field" id="igField"><span aria-hidden="true">@</span><input id="ig" name="ig" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="your.nickname" maxlength="60" required aria-describedby="err"></div>
+ <p class="igprev" id="igPrev">Exactly as in your profile, e.g. <b>swagify.figures</b></p>
       <p class="err" id="err" role="alert"></p>
       <input class="hp" type="text" name="website" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="btn" type="submit" id="send">Send to Swagify</button>
+      <button class="btn" type="submit" id="send">Continue</button>
       <p class="fine">We’ll reply in your Instagram DMs. Your nickname is used only to answer this request.</p>
+      </div>
+      <div class="igconf" id="igConf" hidden>
+        <p class="lbl">Is this your Instagram?</p>
+        <p class="ignick">@<b id="confNick"></b></p>
+        <p class="ignote" id="confNote"></p>
+        <a class="btn ghost igopen" id="confOpen" href="#" target="_blank" rel="noopener">Open my profile <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+        <p class="fine" style="text-align:left;margin-top:10px">Make sure the profile opens and it’s you — that’s where we’ll DM you.</p>
+        <div class="igrow"><button type="button" class="btn ghost" id="confEdit">Fix it</button><button type="button" class="btn" id="confSend">Yes, send it</button></div>
+      </div>
     </form>
     <div id="done" class="state ok" hidden>
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#141414" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
@@ -901,7 +922,7 @@ function openReq(){
   if(!S.ok){const t=S.fig&&S.qtyErr?$('q'):$('calcErr');t.scrollIntoView({block:'center',behavior:reduce?'auto':'smooth'});if(t.focus)t.focus({preventScroll:true});return}
   // snapshot: exactly what the buyer sees is what gets sent
   order={lines:[...S.lines],total:S.total,from:S.from,price:`${S.from?'from ':''}$${S.total}`};
-  sent=false;show('form');err.textContent='';$('igField').classList.remove('bad');ig.setAttribute('aria-invalid','false');
+  sent=false;show('form');err.textContent='';confirmed=null;$('igConf').hidden=true;$('igStep').hidden=false;$('igField').classList.remove('bad');ig.setAttribute('aria-invalid','false');
   $('mlist').innerHTML=order.lines.map(l=>`<li>${esc(l)}</li>`).join('');
   $('mtotal').textContent=order.price;
   lastFocus=document.activeElement;
@@ -922,42 +943,69 @@ modal.addEventListener('keydown',e=>{
 });
 /* Instagram: letters, numbers, periods, underscores; 30 max; no leading/trailing or double periods.
    A pasted profile link or a leading @ is accepted and trimmed. */
+/* Nicknames: Cyrillic look-alike letters (а, е, о, р, с, у, х, і…) are swapped for Latin ones and
+   everything is lowercased (Instagram ignores case). Then the buyer confirms the profile link. */
+const CYR={'а':'a','е':'e','о':'o','р':'p','с':'c','у':'y','х':'x','і':'i','А':'a','В':'b','Е':'e','К':'k','М':'m','Н':'h','О':'o','Р':'p','С':'c','Т':'t','У':'y','Х':'x','І':'i'};
+function normIG(raw){
+  let n=cleanIG(raw);const notes=[];
+  if(/[\u0400-\u04FF]/.test(n)){const m=n.replace(/[\u0400-\u04FF]/g,c=>CYR[c]||c);if(!/[\u0400-\u04FF]/.test(m)){n=m;notes.push('switched Cyrillic letters to Latin')}}
+  if(n!==n.toLowerCase()){n=n.toLowerCase();notes.push('made it lowercase')}
+  return {n,notes};
+}
 function cleanIG(v){return v.trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i,'').replace(/[/?#].*$/,'').replace(/^@+/,'')}
 function igError(n){
   if(!n)return 'Enter your Instagram nickname so we can DM you.';
+  if(/[\u0400-\u04FF]/.test(n))return 'Switch your keyboard to English — Instagram nicknames use Latin letters only.';
+  if(/\s/.test(n))return 'Nicknames have no spaces — use a period (.) or underscore (_) instead.';
   if(/[^A-Za-z0-9._]/.test(n))return 'Use only letters, numbers, periods (.) and underscores (_).';
   if(n.length>30)return 'Instagram nicknames are 30 characters max.';
   if(/^\.|\.$|\.\./.test(n))return 'A nickname can’t start or end with a period, or have two in a row.';
   return '';
 }
 function setErr(m){err.textContent=m;$('igField').classList.toggle('bad',!!m);ig.setAttribute('aria-invalid',m?'true':'false')}
-ig.addEventListener('input',()=>{if(err.textContent)setErr(igError(cleanIG(ig.value)))});
+ig.addEventListener('input',()=>{
+  const {n}=normIG(ig.value),m=igError(n);
+  if(err.textContent)setErr(m);
+  $('igPrev').innerHTML=n&&!m?`Your profile: instagram.com/<b>${esc(n)}</b>`:'Exactly as in your profile, e.g. <b>swagify.figures</b>';
+});
+let confirmed=null;
+function toConfirm(){
+  const {n,notes}=normIG(ig.value),m=igError(n);
+  if(m){setErr(m);ig.focus();return}
+  setErr('');confirmed={n,typed:ig.value.trim()};
+  $('confNick').textContent=n;$('confOpen').href='https://www.instagram.com/'+encodeURIComponent(n)+'/';
+  $('confNote').textContent=notes.length?`We ${notes.join(' and ')}.`:'';
+  $('igStep').hidden=true;$('igConf').hidden=false;$('confSend').focus();
+}
+function editNick(){$('igConf').hidden=true;$('igStep').hidden=false;confirmed=null;ig.focus();ig.select()}
+$('confEdit').addEventListener('click',editNick);
+$('confSend').addEventListener('click',()=>submitOrder());
 const newId=()=>(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
 function submitOrder(){
   if(inflight)return;
-  const n=cleanIG(ig.value),m=igError(n);
-  if(m){show('form');setErr(m);ig.focus();return}
-  setErr('');
+  if(!confirmed){show('form');toConfirm();return}
+  const n=confirmed.n;
   const payload={instagram:n,lines:order.lines,price:order.price,total:order.total};
   // same nickname + same order = same request id, so "Try again" can never create a second request
   const key=JSON.stringify(payload);
   if(!attempt||attempt.key!==key)attempt={key,id:newId()};
-  payload.requestId=attempt.id;payload.website=$('website').value;
-  inflight=true;send.disabled=true;send.setAttribute('aria-busy','true');send.textContent='Sending…';$('retry').disabled=true;$('retry').textContent='Sending…';
+  payload.requestId=attempt.id;payload.website=$('website').value;payload.typed=confirmed.typed;
+  const send=$('confSend');
+  inflight=true;send.disabled=true;send.setAttribute('aria-busy','true');send.textContent='Sending…';$('confEdit').disabled=true;$('retry').disabled=true;$('retry').textContent='Sending…';
   const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),17000);
   // the server ignores requests sent faster than a person could (anti-spam), so never send before 1.6 s
   new Promise(r=>setTimeout(r,Math.max(0,1600-(Date.now()-openedAt)))).then(()=>{payload.elapsed=Date.now()-openedAt;return fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctl.signal})})
     .then(async r=>{
-      if(r.status===400){const j=await r.json().catch(()=>({}));if(j.error==='bad_instagram'){show('form');setErr(igError(n)||'That nickname doesn’t look right — check it and try again.');ig.focus();return}}
+      if(r.status===400){const j=await r.json().catch(()=>({}));if(j.error==='bad_instagram'){show('form');editNick();setErr(igError(n)||'That nickname doesn’t look right — check it and try again.');return}}
       if(!r.ok)throw new Error('http '+r.status);
       sent=true;
       $('dline').textContent=`Thanks, @${n}! We got your request: ${order.lines[0]}${order.lines.length>1?' and more':''} — ${order.price} + shipping.`;
       show('done');$('back').focus();
     })
     .catch(()=>{show('fail');$('retry').focus()})
-    .finally(()=>{clearTimeout(tm);inflight=false;send.disabled=false;send.removeAttribute('aria-busy');send.textContent='Send to Swagify';$('retry').disabled=false;$('retry').textContent='Try again'});
+    .finally(()=>{clearTimeout(tm);inflight=false;send.disabled=false;send.removeAttribute('aria-busy');send.textContent='Yes, send it';$('confEdit').disabled=false;$('retry').disabled=false;$('retry').textContent='Try again'});
 }
-form.addEventListener('submit',e=>{e.preventDefault();submitOrder()});
+form.addEventListener('submit',e=>{e.preventDefault();if($('igConf').hidden)toConfirm();else submitOrder()});
 $('retry').addEventListener('click',submitOrder);
 window.__swagify={S,readQty,render,parseQty};
 /* reveal steps on scroll */
@@ -966,6 +1014,6 @@ if(reduce||!('IntersectionObserver' in window))els.forEach(e=>e.classList.add('i
 else{const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.2});els.forEach(e=>io.observe(e))}}
 }
 </script>
-<script src="app.js?v=202611272137" async></script>
+<script src="app.js?v=202611272243" async></script>
 </body>
 </html>
