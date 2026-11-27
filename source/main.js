@@ -23,6 +23,23 @@ function loadModel(url, onProgress) {
   }
   return pending[url];
 }
+const keyPending = {};
+function loadKey(url) {
+  if (!keyPending[url]) {
+    keyPending[url] = new Promise((res, rej) => gltfLoader.load(url, (g) => {
+      const inner = new THREE.Group(); inner.add(g.scene); inner.rotation.x = Math.PI / 2 - 0.45;
+      const wrap = new THREE.Group(); wrap.add(inner);
+      const b = new THREE.Box3().setFromObject(wrap); const c = b.getCenter(new THREE.Vector3()); const sz = b.getSize(new THREE.Vector3());
+      inner.position.sub(c);
+      const k = 1 / sz.x; wrap.scale.setScalar(k);
+      wrap.userData.h = sz.y * k;
+      g.scene.traverse((o) => { if (o.isMesh) o.userData.plate = !(o.material && o.material.name === 'Material.001'); });
+      const out = new THREE.Group(); out.add(wrap); out.userData.h = wrap.userData.h;
+      res(out);
+    }, undefined, rej));
+  }
+  return keyPending[url];
+}
 function makeRenderer() {
   const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   r.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -118,7 +135,7 @@ function fitTo(el, renderer, camera) {
   }
   const loop = () => { ctl.update(); vr.render(vs, vc); raf = requestAnimationFrame(loop); };
   window.swViewer = {
-    open(el, url) {
+    open(el, url, opts = {}) {
       try { if (!vr) setup(); } catch (e) { el.classList.add('no3d'); return; }
       holder = el;
       el.appendChild(vr.domElement);
@@ -126,7 +143,8 @@ function fitTo(el, renderer, camera) {
       if (current) vs.remove(current);
       vc.position.set(0, 0.55, 2.4); ctl.target.set(0, 0.5, 0); ctl.autoRotate = !reduce;
       el.classList.remove('ready');
-      loadModel(url).then((m) => { if (holder !== el) return; current = m; vs.add(m); el.classList.add('ready'); })
+      (opts.key ? loadKey(url).then((k) => { const g = new THREE.Group(); const c = k.clone(true); const m = new THREE.MeshStandardMaterial({ color: 0x2f9fe0, roughness: 0.35 }); c.traverse((o) => { if (o.isMesh && o.userData.plate) o.material = m; }); c.scale.setScalar(0.9); c.position.y = 0.5; g.add(c); return g; }) : loadModel(url))
+        .then((m) => { if (holder !== el) return; current = m; vs.add(m); el.classList.add('ready'); })
         .catch(() => el.classList.add('no3d'));
       ro = new ResizeObserver(() => fitTo(el, vr, vc)); ro.observe(el); fitTo(el, vr, vc);
       cancelAnimationFrame(raf); loop();
@@ -139,7 +157,7 @@ function fitTo(el, renderer, camera) {
 {
   const box = document.getElementById('calcView');
   if (box) {
-    const urls = { simple: box.dataset.low, medium: box.dataset.med, complex: box.dataset.high };
+    const urls = { simple: box.dataset.low, medium: box.dataset.med, complex: box.dataset.high }; const keyUrl = box.dataset.key;
     let r, scene, cam, ctl, group, ring, spec = null, started = false, visible = false, raf = 0, token = 0;
     const clay = new THREE.MeshStandardMaterial({ color: 0xd2d2d0, roughness: 0.55 });
     const metal = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, roughness: 0.25, metalness: 1 });
@@ -147,7 +165,7 @@ function fitTo(el, renderer, camera) {
     const solidMat = (hex) => solids[hex] || (solids[hex] = new THREE.MeshStandardMaterial({ color: hex, roughness: 0.35 }));
     const sizeScale = { 5: 0.36, 10: 0.52, 15: 0.66, 20: 0.82, 25: 1, 26: 1.08 };
     const fov = 30, tanH = Math.tan((fov / 2) * Math.PI / 180);
-    let fitDist = 2.2;
+    let fitDist = 2.2, minH = 1.1, lastFit = 0;
 
     function start() {
       started = true;
@@ -158,7 +176,7 @@ function fitTo(el, renderer, camera) {
       const sh = softShadow(3.2); scene.add(sh);
       const pm = new THREE.PMREMGenerator(r);
       const env = new THREE.Scene(); env.background = new THREE.Color(0x9fd8f0);
-      scene.environment = pm.fromScene(env).texture;
+      scene.environment = pm.fromScene(env).texture; scene.environmentIntensity = 0.45;
       cam = new THREE.PerspectiveCamera(fov, 1, 0.01, 80);
       ctl = new OrbitControls(cam, r.domElement);
       ctl.enablePan = false; ctl.enableZoom = false; ctl.enableDamping = true;
@@ -193,15 +211,17 @@ function fitTo(el, renderer, camera) {
       if (!cam || !group.children.length) return;
       const b = new THREE.Box3().setFromObject(group);
       const size = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
-      const h = Math.max(size.y, 1.1), w = Math.max(size.x, size.z, 0.6);
+      const h = Math.max(size.y, minH), w = Math.max(size.x, size.z, minH > 1 ? 0.6 : 0.25);
       fitDist = Math.max(h / (2 * tanH), w / (2 * tanH * cam.aspect)) * 1.18 + size.z * 0.5;
-      const ty = Math.max(c.y, 0.45);
-      ctl.target.set(0, ty, 0);
-      ctl.minDistance = fitDist * 0.25; ctl.maxDistance = fitDist * 1.6;
-      if (resetAngle) cam.position.set(0, ty + fitDist * 0.08, fitDist);
+      const ty = minH > 1 ? Math.max(c.y, 0.45) : c.y;
+      ctl.target.set(c.x, ty, 0);
+      ctl.minDistance = fitDist * 0.15; ctl.maxDistance = fitDist * 1.8;
+      const refit = !lastFit || fitDist / lastFit > 1.12 || fitDist / lastFit < 0.89;
+      lastFit = fitDist;
+      if (resetAngle) cam.position.set(c.x, ty + fitDist * 0.08, fitDist);
       else {
         const off = cam.position.clone().sub(ctl.target);
-        off.setLength(Math.min(Math.max(off.length(), ctl.minDistance), ctl.maxDistance));
+        off.setLength(refit ? fitDist : Math.min(Math.max(off.length(), ctl.minDistance), ctl.maxDistance));
         cam.position.copy(ctl.target).add(off);
       }
     }
@@ -209,45 +229,50 @@ function fitTo(el, renderer, camera) {
       const my = ++token;
       box.classList.add('busy');
       const items = sp.items.slice(0, 10);
-      const many = items.length > 3;
-      const lod = (it) => (it.kind === 'key' ? 'simple' : many ? (it.details === 'complex' ? 'medium' : 'simple') : it.details);
-      const need = [...new Set(items.map((it) => urls[lod(it)]))];
-      let models;
-      try { models = Object.fromEntries(await Promise.all(need.map(async (u) => [u, await loadModel(u)]))); }
-      catch (e) { box.classList.add('no3d'); return; }
+      const figs = items.filter((it) => it.kind !== 'key'), keys = items.filter((it) => it.kind === 'key');
+      const many = figs.length > 3;
+      const lod = (it) => (many ? (it.details === 'complex' ? 'medium' : 'simple') : it.details);
+      let models, keyBase = null;
+      try {
+        const need = [...new Set(figs.map((it) => urls[lod(it)]))];
+        models = Object.fromEntries(await Promise.all(need.map(async (u) => [u, await loadModel(u)])));
+        if (keys.length) keyBase = await loadKey(keyUrl);
+      } catch (e) { box.classList.add('no3d'); return; }
       if (my !== token) return;
       const prevCount = group.children.length;
       group.clear();
-      const placed = [];
-      for (const it of items) {
-        const base = models[urls[lod(it)]];
-        const c = base.clone(true);
-        if (it.kind === 'key') {
-          paint(c, solidMat(it.color));
-          c.scale.setScalar(0.55);
-          const rg = ring.clone(); rg.position.y = 0.57;
-          const kc = new THREE.Group(); kc.add(c, rg); kc.userData.w = 0.3; kc.userData.lift = 0.12;
-          placed.push(kc);
-        } else {
-          paint(c, it.paint === 'painted' ? null : it.paint === 'solid' ? solidMat(it.color) : clay);
-          const sc = sizeScale[it.size] || 0.66;
-          c.scale.setScalar(sc);
-          c.userData.w = 0.42 * sc; c.userData.lift = 0;
-          placed.push(c);
-        }
-      }
-      // rows of up to 5, centred; second row sits behind
-      const perRow = 5;
+      // figures: rows of up to 5 standing on the floor
+      const placed = figs.map((it) => {
+        const c = models[urls[lod(it)]].clone(true);
+        paint(c, it.paint === 'painted' ? null : it.paint === 'solid' ? solidMat(it.color) : clay);
+        const sc = sizeScale[it.size] || 0.66;
+        c.scale.setScalar(sc); c.userData.w = 0.42 * sc;
+        return c;
+      });
+      const perRow = 5; let figW = 0;
       for (let row = 0; row * perRow < placed.length; row++) {
         const rowItems = placed.slice(row * perRow, row * perRow + perRow);
         const total = rowItems.reduce((a, o) => a + o.userData.w, 0) + 0.06 * (rowItems.length - 1);
+        figW = Math.max(figW, total);
         let x = -total / 2;
-        rowItems.forEach((o) => {
-          o.position.set(x + o.userData.w / 2, o.userData.lift, -row * 0.55);
-          x += o.userData.w + 0.06;
-          group.add(o);
+        rowItems.forEach((o) => { o.position.set(x + o.userData.w / 2, 0, -row * 0.55); x += o.userData.w + 0.06; group.add(o); });
+      }
+      // keychains: 5 cm each (a 15 cm figure is 0.66 units tall), hung in a grid of 2 columns
+      if (keys.length) {
+        const kw = 0.22, kh = keyBase.userData.h * kw, gapX = 0.05, gapY = 0.05, cols = keys.length > 1 ? 2 : 1;
+        const rows = Math.ceil(keys.length / cols);
+        const blockW = cols * kw + (cols - 1) * gapX;
+        const x0 = placed.length ? figW / 2 + 0.15 : -blockW / 2;
+        keys.forEach((it, i) => {
+          const k = keyBase.clone(true);
+          k.traverse((o) => { if (o.isMesh && o.userData.plate) o.material = solidMat(it.color); });
+          k.scale.setScalar(kw);
+          const col = i % cols, row = Math.floor(i / cols);
+          k.position.set(x0 + col * (kw + gapX) + kw / 2, 0.04 + (rows - 1 - row) * (kh + gapY) + kh / 2, 0);
+          group.add(k);
         });
       }
+      minH = placed.length ? 1.1 : 0.2;
       frame(prevCount === 0 || prevCount !== group.children.length);
       box.classList.remove('busy');
     }
