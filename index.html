@@ -7,12 +7,23 @@
 <meta name="description" content="Turn your character into a hand-painted collectible. Custom handmade figures and keychains by Swagify.">
 <meta property="og:title" content="Swagify — Handmade Figures">
 <meta property="og:description" content="Turn your character into a hand-painted collectible.">
-<meta property="og:image" content="step-figure.webp">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://swagify-one.vercel.app/">
+<meta property="og:image" content="https://swagify-one.vercel.app/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#42c0ef">
 <link rel="icon" href="logo-mascot.svg" type="image/svg+xml">
-<link rel="preload" as="image" href="hero-figure.webp" fetchpriority="high">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&family=Permanent+Marker&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="hero-poster.webp" fetchpriority="high">
+<link rel="preload" href="fonts/archivo-black-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/space-grotesk-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>/* fonts are served from this site (Archivo Black, Space Grotesk, Permanent Marker — open font licenses, see fonts/) */
+@font-face{font-family:'Archivo Black';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/archivo-black-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/space-grotesk-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/space-grotesk-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/space-grotesk-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Permanent Marker';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/permanent-marker-latin-400-normal.woff2) format('woff2')}
+</style>
 <style>
 /* VOICE: loud, street, confident — a sticker sheet that talks back
    IDEA: a vinyl-toy drop: poster hero, collectible cards, a build-your-own counter
@@ -50,7 +61,7 @@ h2{font:400 clamp(40px,6vw,80px)/.92 'Archivo Black',sans-serif;margin:0;text-tr
 .nav .btn{min-height:44px;white-space:nowrap;font-size:14px;padding:10px 20px;background:#fff;color:var(--ink);box-shadow:3px 4px 0 var(--navy)}
 
 /* hero */
-#hero{height:320vh;position:relative;background:var(--cyan)}
+#hero{height:230vh;position:relative;background:var(--cyan)}
 .poster{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
 .word{position:absolute;left:50%;top:11vh;width:min(94vw,1500px);aspect-ratio:435/108.5;background:url(logo-word.svg) center/contain no-repeat;
   filter:drop-shadow(.6vw .7vw 0 var(--navy)) drop-shadow(.6vw .7vw 0 var(--ink));transform:translateX(-50%) translateY(calc(var(--p)*-5vh)) scale(calc(1 + var(--p)*.06))}
@@ -292,6 +303,7 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 .mtotal{display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 0;border-top:2px dashed #ccc;padding-top:10px;font-weight:700}
 .mtotal b{font:400 26px 'Archivo Black',sans-serif}
 .osum .ship{color:var(--navy);margin-top:4px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .fine{margin:12px 0 0;font-size:14px;color:#444;text-align:center}
 label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
 .field{display:flex;border:2.5px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden}
@@ -352,7 +364,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
     <div class="word" role="img" aria-label="Swagify"></div>
     <ul class="side l" aria-hidden="true"><li>Create</li><li>your</li></ul>
     <ul class="side r" aria-hidden="true"><li>unique</li><li>figure</li></ul>
-    <img class="hero-photo" src="hero-figure.webp" width="640" height="1285" fetchpriority="high" alt="A hand-painted Swagify figure held in a hand">
+    <img class="hero-photo" src="hero-poster.webp" width="560" height="1393" fetchpriority="high" alt="Swagify handmade figure: a boy in a black hoodie, glasses and gray cargo pants">
     <div id="stage" data-model="figure-hd.glb" aria-hidden="true"></div>
     <div class="hero-cta">
       <p>Turn your character into a hand-painted collectible.</p>
@@ -422,7 +434,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
     </div>
     <aside class="total" aria-label="Your order">
       <div class="view" id="calcView" data-low="low.glb" data-med="med.glb" data-high="figure-hd.glb" data-key="keychain.glb" role="img" aria-label="Preview of your order">
-        <img class="vposter" id="vposter" src="hero-figure.webp" alt="" loading="lazy">
+        <img class="vposter" id="vposter" src="hero-poster.webp" alt="" loading="lazy">
         <span class="badge" id="vbadge">15 cm</span>
         <div class="vtools">
           <button type="button" id="vzin" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -527,8 +539,9 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
       <label for="ig">Your Instagram</label>
       <div class="field" id="igField"><span aria-hidden="true">@</span><input id="ig" name="ig" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="your.nickname" maxlength="60" required aria-describedby="err"></div>
       <p class="err" id="err" role="alert"></p>
+      <input class="hp" type="text" name="website" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <button class="btn" type="submit" id="send">Send to Swagify</button>
-      <p class="fine">We’ll reply in your Instagram DMs.</p>
+      <p class="fine">We’ll reply in your Instagram DMs. Your nickname is used only to answer this request.</p>
     </form>
     <div id="done" class="state ok" hidden>
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#141414" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
@@ -745,7 +758,7 @@ function render(o={}){
   $('total').innerHTML=qBad?'—':`${from?'<small>from </small>':''}$${total}`;
   $('vbadge').textContent=badge;
   $('calcErr').textContent=qBad?'Fix the number of figures to see your price.':ok?'':'Assign a color to every keychain in the pack.';
-  $('vposter').src=S.fig?'hero-figure.webp':'keychain.webp';
+  $('vposter').src=S.fig?'hero-poster.webp':'keychain.webp';
   S.spec=spec;
   window.swCalc&&swCalc.update(spec);
 }
@@ -862,7 +875,7 @@ $('porder').addEventListener('click',()=>{
 
 /* ---------- request modal ---------- */
 const modal=$('modal'),form=$('form'),done=$('done'),fail=$('fail'),ig=$('ig'),err=$('err'),send=$('send');
-let sent=false,inflight=false,attempt=null,order=null,lastFocus=null;
+let sent=false,inflight=false,attempt=null,order=null,lastFocus=null,openedAt=0;
 function show(v){form.hidden=v!=='form';done.hidden=v!=='done';fail.hidden=v!=='fail'}
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* keep the dialog inside the part of the screen the keyboard leaves visible */
@@ -880,7 +893,7 @@ function openReq(){
   $('mlist').innerHTML=order.lines.map(l=>`<li>${esc(l)}</li>`).join('');
   $('mtotal').textContent=order.price;
   lastFocus=document.activeElement;
-  fitVV();modal.hidden=false;document.body.classList.add('lock');ig.focus();
+  openedAt=Date.now();fitVV();modal.hidden=false;document.body.classList.add('lock');ig.focus();
 }
 function closeReq(){
   if(inflight)return;
@@ -917,10 +930,11 @@ function submitOrder(){
   // same nickname + same order = same request id, so "Try again" can never create a second request
   const key=JSON.stringify(payload);
   if(!attempt||attempt.key!==key)attempt={key,id:newId()};
-  payload.requestId=attempt.id;
+  payload.requestId=attempt.id;payload.website=$('website').value;
   inflight=true;send.disabled=true;send.setAttribute('aria-busy','true');send.textContent='Sending…';$('retry').disabled=true;$('retry').textContent='Sending…';
-  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),15000);
-  fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctl.signal})
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),17000);
+  // the server ignores requests sent faster than a person could (anti-spam), so never send before 1.6 s
+  new Promise(r=>setTimeout(r,Math.max(0,1600-(Date.now()-openedAt)))).then(()=>{payload.elapsed=Date.now()-openedAt;return fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctl.signal})})
     .then(async r=>{
       if(r.status===400){const j=await r.json().catch(()=>({}));if(j.error==='bad_instagram'){show('form');setErr(igError(n)||'That nickname doesn’t look right — check it and try again.');ig.focus();return}}
       if(!r.ok)throw new Error('http '+r.status);

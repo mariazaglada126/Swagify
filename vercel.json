@@ -1,0 +1,6 @@
+{
+  "redirects": [
+    { "source": "/process.html", "destination": "/#process", "permanent": true },
+    { "source": "/process", "destination": "/#process", "permanent": true }
+  ]
+}

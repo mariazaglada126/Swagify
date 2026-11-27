@@ -7,6 +7,16 @@ const IG = /^(?!\.)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]{1,30}$/;
 const ID = /^[A-Za-z0-9-]{8,64}$/;
 const seen = new Map(); // requestId -> time (kept while this instance is warm)
 const TTL = 30 * 60 * 1000;
+// Anti-spam: hidden "website" field must stay empty, the form must be open ≥ 1.5 s (the page waits for that itself),
+// and one IP may send at most 5 requests per 10 minutes (per warm instance).
+const hits = new Map(); // ip -> [times]
+const RATE_N = 5, RATE_WIN = 10 * 60 * 1000;
+function limited(ip) {
+  const now = Date.now(), list = (hits.get(ip) || []).filter((t) => now - t < RATE_WIN);
+  if (hits.size > 5000) hits.clear();
+  if (list.length >= RATE_N) { hits.set(ip, list); return true; }
+  list.push(now); hits.set(ip, list); return false;
+}
 
 function remember(id) {
   const now = Date.now();
@@ -15,6 +25,8 @@ function remember(id) {
 }
 
 async function handler(req, res) {
+  // GET /api/request → is Telegram configured? (sends nothing; safe to open in a browser)
+  if (req.method === 'GET') return res.status(200).json({ ok: true, configured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) });
   if (req.method !== 'POST') return res.status(405).json({ ok: false });
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }
@@ -24,6 +36,10 @@ async function handler(req, res) {
   const id = String(body.requestId || '');
   if (!ID.test(id)) return res.status(400).json({ ok: false, error: 'bad_request_id' });
   if (seen.has(id)) return res.status(200).json({ ok: true, duplicate: true });
+  // bots: pretend success, send nothing
+  if (String(body.website || '') !== '' || (Number(body.elapsed) || 0) < 1500) return res.status(200).json({ ok: true });
+  const ip = String((req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || '').split(',')[0].trim() || 'unknown';
+  if (limited(ip)) return res.status(429).json({ ok: false, error: 'too_many' });
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chat = process.env.TELEGRAM_CHAT_ID;

@@ -10,9 +10,9 @@ let sent = [];
 handler.fetch = async (url, init) => { sent.push(JSON.parse(init.body)); return { ok: true }; };
 const call = (body) => new Promise((resolve) => {
   const res = { code: 0, status(c) { this.code = c; return this; }, json(j) { resolve({ code: this.code, body: j }); } };
-  handler({ method: 'POST', body }, res);
+  handler({ method: body.__method || 'POST', body, headers: body.__ip ? { 'x-forwarded-for': body.__ip } : {} }, res);
 });
-const base = { instagram: 'swag.fan_1', lines: ['Figure · 15 cm / 5.9 in', 'Quantity 6 (−10%)'], price: '$297' };
+const base = { instagram: 'swag.fan_1', lines: ['Figure · 15 cm / 5.9 in', 'Quantity 6 (−10%)'], price: '$297', elapsed: 5000, website: '' };
 
 test('rejects bad nicknames', async () => {
   for (const n of ['', 'has space', 'émoji', '.dot', 'dot.', 'two..dots', 'a'.repeat(31)]) {
@@ -41,4 +41,27 @@ test('a failed Telegram call can be retried with the same id', async () => {
   handler.fetch = async (u, init) => { sent.push(JSON.parse(init.body)); return { ok: true }; };
   assert.equal((await call({ ...base, requestId: id })).code, 200);
   assert.equal(sent.length, 1);
+});
+
+test('GET reports whether Telegram is configured, without sending', async () => {
+  sent = [];
+  const r = await call({ __method: 'GET' });
+  assert.equal(r.code, 200); assert.equal(r.body.configured, true); assert.equal(sent.length, 0);
+});
+
+test('bots are ignored: filled honeypot or instant submit', async () => {
+  sent = [];
+  handler.fetch = async (u, init) => { sent.push(JSON.parse(init.body)); return { ok: true }; };
+  assert.equal((await call({ ...base, website: 'http://spam', requestId: 'd4e9c5c2-1111-4222-8333-444455556666' })).code, 200);
+  assert.equal((await call({ ...base, elapsed: 200, requestId: 'e5f0d6d3-1111-4222-8333-444455556666' })).code, 200);
+  assert.equal(sent.length, 0);
+});
+
+test('rate limit: 5 requests per IP per 10 minutes', async () => {
+  sent = [];
+  const codes = [];
+  for (let i = 0; i < 7; i++) codes.push((await call({ ...base, __ip: '203.0.113.9', requestId: `f6a1e7e${i}-1111-4222-8333-444455556666` })).code);
+  assert.deepEqual(codes, [200, 200, 200, 200, 200, 429, 429]);
+  assert.equal(sent.length, 5);
+  assert.equal((await call({ ...base, __ip: '198.51.100.4', requestId: 'a7b2f8f9-1111-4222-8333-444455556666' })).code, 200);
 });

@@ -11,7 +11,16 @@ const gltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const pending = {};
 // Phones get the same models with 1024px textures (‑m.glb): 4096px textures can exhaust iOS GPU memory and render black.
 const PHONE = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 820;
-const mapUrl = (u) => PHONE ? u.replace(/^(figure-hd|fig[2-6])\.glb$/, '$1-m.glb') : u;
+// ─── MODEL QUALITY SWITCH ─────────────────────────────────────────────────────
+// Computers load '-2k.glb' (2048px textures, ~4.5 MB). To go back to the original
+// 4096px models (6–11 MB), change '2k' to 'hd' below and run the build.
+const DESKTOP_MODELS = '2k'; // '2k' | 'hd'
+// ──────────────────────────────────────────────────────────────────────────────
+const mapUrl = (u) => {
+  if (!/^(figure-hd|fig[2-6])\.glb$/.test(u)) return u;
+  if (PHONE) return u.replace('.glb', '-m.glb');
+  return DESKTOP_MODELS === '2k' ? u.replace('.glb', '-2k.glb') : u;
+};
 function loadModel(url, onProgress) {
   url = mapUrl(url);
   if (!pending[url]) {

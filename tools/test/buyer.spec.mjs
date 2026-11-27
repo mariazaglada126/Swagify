@@ -244,7 +244,8 @@ test('gallery always opens on the first slide of the next card', async ({ page }
   await page.locator('#portfolio').scrollIntoViewIfNeeded();
   await expect(page.locator('#deck')).toHaveClass(/ready/, { timeout: 8000 });
   await page.locator('.cc.front').click();
-  await expect(page.locator('#pm')).toBeVisible();
+  await expect(page.locator('#pm')).toHaveClass(/show/);
+  await page.waitForTimeout(400);
   await page.evaluate(() => { const s = document.getElementById('slides'); s.scrollLeft = s.clientWidth * 3; });
   await expect(page.locator('#pcount')).toHaveText(/^4 \//);
   await page.click('#pclose'); await expect(page.locator('#pm')).toBeHidden();
