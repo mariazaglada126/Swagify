@@ -6,6 +6,9 @@
 const NOTIFY_USERNAME = 'layylyon';
 const DEFAULT_CHAT_ID = '624398287'; // @layylyon (not secret: only this bot's token can write there)
 const chatId = () => process.env.TELEGRAM_CHAT_ID || DEFAULT_CHAT_ID;
+const crypto = require('crypto');
+// signs "this browser may attach reference files to this Telegram message" (checked by /api/attach)
+const sign = (token, id, messageId) => crypto.createHmac('sha256', token).update(`${id}.${messageId}`).digest('hex').slice(0, 32);
 const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 const IG = /^(?!\.)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]{1,30}$/;
 const ID = /^[A-Za-z0-9-]{8,64}$/;
@@ -24,8 +27,8 @@ function limited(ip) {
 
 function remember(id) {
   const now = Date.now();
-  for (const [k, t] of seen) if (now - t > TTL) seen.delete(k);
-  seen.set(id, now);
+  for (const [k, v] of seen) if (now - v.t > TTL) seen.delete(k);
+  seen.set(id, { t: now, r: null });
 }
 
 async function handler(req, res) {
@@ -58,7 +61,7 @@ async function handler(req, res) {
   if (!IG.test(ig)) return res.status(400).json({ ok: false, error: 'bad_instagram' });
   const id = String(body.requestId || '');
   if (!ID.test(id)) return res.status(400).json({ ok: false, error: 'bad_request_id' });
-  if (seen.has(id)) return res.status(200).json({ ok: true, duplicate: true });
+  if (seen.has(id)) return res.status(200).json({ ok: true, duplicate: true, ...(seen.get(id).r || {}) });
   // bots: pretend success, send nothing
   if (String(body.website || '') !== '' || (Number(body.elapsed) || 0) < 1500) return res.status(200).json({ ok: true });
   const ip = String((req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || '').split(',')[0].trim() || 'unknown';
@@ -71,14 +74,17 @@ async function handler(req, res) {
   const lines = Array.isArray(body.lines) ? body.lines.slice(0, 40).map((l) => String(l).slice(0, 120)) : [];
   const price = String(body.price || '').slice(0, 20);
   const typed = String(body.typed || '').slice(0, 80);
+  const files = Math.max(0, Math.min(5, parseInt(body.files, 10) || 0));
   remember(id); // claim the id before sending so a parallel retry can't post twice
   // one request at a time per warm instance, so two buyers can't grab the same number
-  const job = queue.then(() => sendOrder({ token, chat, ig, typed, lines, price }));
+  const job = queue.then(() => sendOrder({ token, chat, ig, typed, lines, price, files }));
   queue = job.catch(() => {});
   try {
-    const ok = await job;
-    if (!ok) { seen.delete(id); return res.status(502).json({ ok: false }); }
-    return res.status(200).json({ ok: true });
+    const out = await job;
+    if (!out) { seen.delete(id); return res.status(502).json({ ok: false }); }
+    const r = { messageId: out.messageId, no: out.no, sig: sign(token, id, out.messageId) };
+    if (seen.has(id)) seen.get(id).r = r;
+    return res.status(200).json({ ok: true, ...r });
   } catch (e) {
     seen.delete(id);
     return res.status(502).json({ ok: false });
@@ -102,7 +108,7 @@ async function tg(token, method, payload) {
   const j = r.json ? await r.json().catch(() => ({})) : {};
   return { ok: !!r.ok && j.ok !== false, result: j.result };
 }
-async function sendOrder({ token, chat, ig, typed, lines, price }) {
+async function sendOrder({ token, chat, ig, typed, lines, price, files }) {
   let num = null, prevPin = null;
   try {
     const c = await tg(token, 'getChat', { chat_id: chat });
@@ -114,15 +120,17 @@ async function sendOrder({ token, chat, ig, typed, lines, price }) {
   } catch (e) { num = null; }
   const tag = num ? ` #${String(num).padStart(3, '0')}` : '';
   const typedNote = typed && typed.replace(/^@/, '') !== ig ? `\n✍️ Typed as: ${esc(typed)}` : '';
-  const text = `🆕 <b>New Swagify request${tag}</b>\n🕒 ${kyivTime()}\n\n👤 Instagram: <a href="https://instagram.com/${esc(ig)}">@${esc(ig)}</a>${typedNote}\n\n${lines.map((l) => '• ' + esc(l)).join('\n')}\n\n💰 Estimate: <b>${esc(price)}</b> + shipping`;
+  const text = `🆕 <b>New Swagify request${tag}</b>\n🕒 ${kyivTime()}\n\n👤 Instagram: <a href="https://instagram.com/${esc(ig)}">@${esc(ig)}</a>${typedNote}\n\n${lines.map((l) => '• ' + esc(l)).join('\n')}\n\n💰 Estimate: <b>${esc(price)}</b> + shipping${files ? `\n📎 References: ${files} (below)` : ''}`;
   const sent = await tg(token, 'sendMessage', { chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true });
   if (!sent.ok) return false;
+  const messageId = sent.result && sent.result.message_id;
   try {
     if (num && sent.result && sent.result.message_id) {
       await tg(token, 'pinChatMessage', { chat_id: chat, message_id: sent.result.message_id, disable_notification: true });
       if (prevPin) await tg(token, 'unpinChatMessage', { chat_id: chat, message_id: prevPin });
     }
   } catch (e) { /* numbering is best effort; the request itself was delivered */ }
-  return true;
+  return { messageId, no: num ? String(num).padStart(3, '0') : null };
 }
+handler.tg = tg; handler.sign = sign; handler.chatId = chatId; handler.esc = esc;
 module.exports = handler;

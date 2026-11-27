@@ -7,9 +7,11 @@ const handler = require('../../api/request.js');
 process.env.TELEGRAM_BOT_TOKEN = 'test-token';
 process.env.TELEGRAM_CHAT_ID = 'test-chat';
 // fake Telegram: remembers the pinned message like the real chat does
-let sent = [], pinned = null, mid = 100, failSend = false;
+let sent = [], pinned = null, mid = 100, failSend = false, uploads = [];
 const fakeTg = async (url, init) => {
-  const m = /\/bot[^/]+\/(\w+)/.exec(url)[1], b = init && init.body ? JSON.parse(init.body) : {};
+  const m = /\/bot[^/]+\/(\w+)/.exec(url)[1];
+  const b = init && typeof init.body === 'string' ? JSON.parse(init.body) : init && init.body instanceof FormData ? Object.fromEntries(init.body.entries()) : {};
+  if (m === 'sendPhoto' || m === 'sendDocument') { uploads.push({ m, ...b }); return { ok: true, json: async () => ({ ok: true, result: {} }) }; }
   const reply = (ok, result) => ({ ok, json: async () => ({ ok, result }) });
   if (m === 'getMe') return reply(true, { username: 'TestBot' });
   if (m === 'getChat') return reply(true, pinned ? { pinned_message: pinned } : {});
@@ -97,4 +99,35 @@ test('request shows the Kyiv time like 27.11.2026, 22:47', async () => {
   sent = [];
   await call({ ...base, __ip: '192.0.2.9', requestId: 'd9d9d9d9-1111-4222-8333-444455556666' });
   assert.match(sent[0].text, /🕒 \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}/);
+});
+
+const attach = require('../../api/attach.js');
+attach.fetch = (...a) => fakeTg(...a);
+const callAttach = (body) => new Promise((resolve) => {
+  const res = { code: 0, status(c) { this.code = c; return this; }, json(j) { resolve({ code: this.code, body: j }); } };
+  attach({ method: 'POST', body }, res);
+});
+test('reference files reach Telegram as replies, only with a valid signature', async () => {
+  sent = []; uploads = [];
+  const id = 'e1e1e1e1-1111-4222-8333-444455556666';
+  const r = await call({ ...base, files: 2, __ip: '192.0.2.20', requestId: id });
+  assert.equal(r.code, 200); assert.ok(r.body.sig); assert.ok(r.body.messageId);
+  assert.match(sent[0].text, /References: 2/);
+  const png = Buffer.from('89504e470d0a1a0a', 'hex').toString('base64');
+  const ok = await callAttach({ requestId: id, messageId: r.body.messageId, sig: r.body.sig, idx: 0, total: 2, name: 'my sketch.png', type: 'image/png', data: png });
+  assert.equal(ok.code, 200);
+  assert.equal(uploads.length, 1); assert.equal(uploads[0].m, 'sendPhoto'); assert.match(uploads[0].caption, /Reference 1\/2/);
+  assert.equal(JSON.parse(uploads[0].reply_parameters).message_id, r.body.messageId);
+  // same file again (retry) is not posted twice
+  await callAttach({ requestId: id, messageId: r.body.messageId, sig: r.body.sig, idx: 0, total: 2, name: 'x.png', type: 'image/png', data: png });
+  assert.equal(uploads.length, 1);
+  // forged signature, wrong type, too many, too big
+  assert.equal((await callAttach({ requestId: id, messageId: r.body.messageId, sig: 'nope', idx: 1, type: 'image/png', data: png })).code, 403);
+  assert.equal((await callAttach({ requestId: id, messageId: r.body.messageId, sig: r.body.sig, idx: 1, type: 'application/x-msdownload', data: png })).code, 400);
+  assert.equal((await callAttach({ requestId: id, messageId: r.body.messageId, sig: r.body.sig, idx: 5, type: 'image/png', data: png })).code, 400);
+  const big = Buffer.alloc(3.3 * 1024 * 1024).toString('base64');
+  assert.equal((await callAttach({ requestId: id, messageId: r.body.messageId, sig: r.body.sig, idx: 1, type: 'application/pdf', data: big })).code, 413);
+  // a duplicate order request hands back the same message and signature, so uploads can resume
+  const again = await call({ ...base, files: 2, __ip: '192.0.2.20', requestId: id });
+  assert.equal(again.body.sig, r.body.sig);
 });

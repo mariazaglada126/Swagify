@@ -11,7 +11,13 @@ async function mockApi(page, plan = ['ok']) {
     const step = plan[Math.min(calls.length - 1, plan.length - 1)];
     if (step === 'network') return route.abort('failed');
     if (step === 'slow') { await new Promise((r) => setTimeout(r, 1200)); }
-    return route.fulfill({ status: step === '500' ? 500 : 200, contentType: 'application/json', body: JSON.stringify({ ok: step !== '500' }) });
+    return route.fulfill({ status: step === '500' ? 500 : 200, contentType: 'application/json', body: JSON.stringify({ ok: step !== '500', messageId: 77, sig: 'testsig', no: '007' }) });
+  });
+  calls.files = [];
+  await page.route('**/api/attach', async (route) => {
+    const b = JSON.parse(route.request().postData() || '{}'); calls.files.push(b);
+    const fail = plan.includes('attach-fail-once') && calls.files.filter((f) => f.idx === b.idx).length === 1 && b.idx === 1;
+    return route.fulfill({ status: fail ? 502 : 200, contentType: 'application/json', body: '{"ok":true}' });
   });
   return calls;
 }
@@ -304,4 +310,56 @@ test('nickname: Cyrillic look-alikes and capitals are fixed, buyer confirms the 
   await expect(page.locator('#done')).toBeVisible();
   expect(calls).toHaveLength(1);
   expect(calls[0].instagram).toBe('mushy.akk');
+});
+
+test('reference files: photos are shrunk, sent after the request, failed ones can be retried', async ({ page }) => {
+  const calls = await mockApi(page, ['ok', 'attach-fail-once']);
+  await toCalc(page);
+  await page.click('#open');
+  // a big 4000x3000 PNG made in the page, a small PDF, and a file type we don't take
+  const files = await page.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 4000; c.height = 3000;
+    const x = c.getContext('2d'); x.fillStyle = '#42c0ef'; x.fillRect(0, 0, 4000, 3000); x.fillStyle = '#000'; x.fillRect(500, 500, 900, 900);
+    const png = await new Promise((r) => c.toBlob(r, 'image/png'));
+    const toArr = async (b) => Array.from(new Uint8Array(await b.arrayBuffer()));
+    return { png: await toArr(png) };
+  });
+  await page.setInputFiles('#refInput', [
+    { name: 'my-character.png', mimeType: 'image/png', buffer: Buffer.from(files.png) },
+    { name: 'sketch.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%test\n') },
+    { name: 'virus.exe', mimeType: 'application/x-msdownload', buffer: Buffer.from('MZ') }
+  ]);
+  await expect(page.locator('#refList li')).toHaveCount(2);
+  await expect(page.locator('#refErr')).toContainText('virus.exe');
+  await expect(page.locator('#refList li').first()).toContainText('my-character.jpg');
+  await page.fill('#ig', 'ref.buyer'); await page.click('#send'); await page.click('#confSend');
+  await expect(page.locator('#done')).toBeVisible();
+  expect(calls[0].files).toBe(2);
+  await expect(page.locator('#dline')).toContainText('#007');
+  // the PDF (2nd file) failed once → warning with retry
+  await expect(page.locator('#refWarn')).toBeVisible();
+  await page.click('#refRetry');
+  await expect(page.locator('#refWarn')).toBeHidden();
+  const img = calls.files.find((f) => f.idx === 0);
+  expect(img.type).toBe('image/jpeg'); expect(img.sig).toBe('testsig'); expect(img.messageId).toBe(77);
+  const bytes = Buffer.from(img.data, 'base64');
+  expect(bytes.length).toBeLessThan(3 * 1024 * 1024);
+  expect(calls.files.filter((f) => f.idx === 0)).toHaveLength(1); // the photo was not re-sent on retry
+});
+
+test('reference files: at most 5, PDF over 3 MB is refused with a clear message', async ({ page }) => {
+  await toCalc(page);
+  await page.click('#open');
+  const tiny = Buffer.from(await page.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 20; c.height = 20; c.getContext('2d').fillRect(0, 0, 10, 10);
+    return Array.from(new Uint8Array(await (await new Promise((r) => c.toBlob(r, 'image/png'))).arrayBuffer()));
+  }));
+  await page.setInputFiles('#refInput', Array.from({ length: 6 }, (_, i) => ({ name: `p${i}.png`, mimeType: 'image/png', buffer: tiny })));
+  await expect(page.locator('#refList li')).toHaveCount(5, { timeout: 30_000 });
+  await expect(page.locator('#refErr')).toContainText('up to 5');
+  await expect(page.locator('#refAdd')).toBeHidden();
+  await page.locator('#refList .rm').first().click();
+  await expect(page.locator('#refList li')).toHaveCount(4);
+  await page.setInputFiles('#refInput', [{ name: 'huge.pdf', mimeType: 'application/pdf', buffer: Buffer.alloc(3.5 * 1024 * 1024) }]);
+  await expect(page.locator('#refErr')).toContainText('limit is 3 MB');
 });

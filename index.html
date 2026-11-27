@@ -323,6 +323,26 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 .igrow{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
 .igrow .btn{flex:1 1 140px;justify-content:center;white-space:nowrap}
 .dialog .btn.ghost{background:#fff;color:var(--ink);border-color:var(--ink);box-shadow:4px 5px 0 var(--navy)}
+.refs{margin:16px 0 4px}
+.reftitle{margin:0;font-weight:700}
+.reftitle span{font-weight:500;color:#666}
+.refhint{margin:2px 0 10px;font-size:14px;color:#555}
+.reflist{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:8px}
+.reflist:empty{display:none}
+.reflist li{display:flex;align-items:center;gap:12px;background:#fff;border:2px solid var(--ink);border-radius:16px;padding:6px 6px 6px 8px}
+.reflist .th{width:44px;height:44px;border-radius:10px;object-fit:cover;flex:none;background:#eee;display:grid;place-items:center;font:400 11px 'Archivo Black',sans-serif}
+.reflist .nm{flex:1;min-width:0;font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reflist .nm small{display:block;font-weight:500;color:#666}
+.reflist li.wait .nm small{color:var(--navy)}
+.reflist li.bad{border-color:#b3261e}
+.reflist .rm{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.reflist .rm:hover{background:#eee}
+.refadd{position:relative;display:inline-flex;gap:8px;align-items:center;min-height:46px;padding:8px 20px;font-size:16px;cursor:pointer}
+.refadd input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.refadd:focus-within{outline:3px solid var(--navy);outline-offset:3px}
+.refs.drag{outline:3px dashed var(--navy);outline-offset:6px;border-radius:12px}
+.refs.full .refadd{display:none}
+.refwarn{background:#fff3f2;border:2px solid #b3261e;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-weight:700}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .fine{margin:12px 0 0;font-size:14px;color:#444;text-align:center}
 label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
@@ -529,7 +549,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
     <a class="btn" href="https://www.instagram.com/swagify.figures?fqnt=MTljNGg2ZjVyc2t6Zw%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r=".6" fill="currentColor"/></svg>@swagify.figures</a>
   </div>
 </section>
-<footer><div class="wrap"><span>© 2026 Swagify — Handmade figures · Shipping paid separately</span><span class="marker" style="color:#fff">stay swag ★</span></div><p id="ver" style="margin:8px 0 0;font-size:11px;opacity:.45">v202611272243</p></footer>
+<footer><div class="wrap"><span>© 2026 Swagify — Handmade figures · Shipping paid separately</span><span class="marker" style="color:#fff">stay swag ★</span></div><p id="ver" style="margin:8px 0 0;font-size:11px;opacity:.45">v202611272300</p></footer>
 
 <div class="pm" id="pm" hidden>
   <div class="pbox" role="dialog" aria-modal="true" aria-labelledby="pname">
@@ -559,6 +579,13 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
       <h3 id="mh">Get your quote</h3>
       <p class="mlead">Drop your Instagram nickname. We’ll DM you there to go over your character and the details, then confirm the final price.</p>
       <div class="osum"><p class="lbl">Your order</p><ul id="mlist"></ul><p class="mtotal"><span>Estimated total</span><b id="mtotal"></b></p><p class="ship">Shipping is extra.</p></div>
+      <div class="refs" id="refs">
+        <p class="reftitle">References <span>(optional)</span></p>
+        <p class="refhint">Photos, drawings or screenshots of your character. Up to 5 files: JPG, PNG, WEBP, HEIC or PDF.</p>
+        <ul class="reflist" id="refList"></ul>
+        <label class="btn ghost refadd" id="refAdd"><input type="file" id="refInput" multiple accept="image/*,.heic,.heif,application/pdf,.pdf"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add files</span></label>
+        <p class="err" id="refErr" role="alert"></p>
+      </div>
       <div id="igStep">
       <label for="ig">Your Instagram nickname</label>
       <div class="field" id="igField"><span aria-hidden="true">@</span><input id="ig" name="ig" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="your.nickname" maxlength="60" required aria-describedby="err"></div>
@@ -581,6 +608,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#141414" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
       <h3>Request sent ★</h3>
       <p id="dline" style="margin:0"></p>
+      <div class="refwarn" id="refWarn" hidden><p id="refWarnText" style="margin:0"></p><button class="btn ghost" type="button" id="refRetry">Try uploading again</button></div>
       <p style="margin:0">Keep an eye on your Instagram DMs — that’s where we’ll talk through your idea and confirm the price.</p>
       <button class="btn" type="button" id="back">See what happens next</button>
     </div>
@@ -931,7 +959,7 @@ function openReq(){
 function closeReq(){
   if(inflight)return;
   modal.hidden=true;document.body.classList.remove('lock');
-  if(sent){sent=false;const pr=$('process');pr.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});setTimeout(()=>{const h=$('procTitle');h.setAttribute('tabindex','-1');h.focus({preventScroll:true})},700)}
+  if(sent){sent=false;refs.forEach(r=>r.thumb&&URL.revokeObjectURL(r.thumb));refs=[];refCtx=null;renderRefs();$('refWarn').hidden=true;const pr=$('process');pr.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});setTimeout(()=>{const h=$('procTitle');h.setAttribute('tabindex','-1');h.focus({preventScroll:true})},700)}
   else{const f=lastFocus&&document.body.contains(lastFocus)&&lastFocus!==document.body?lastFocus:$('open');f.focus({preventScroll:true})}
 }
 $('open').addEventListener('click',openReq);$('close').addEventListener('click',closeReq);$('back').addEventListener('click',closeReq);
@@ -980,6 +1008,75 @@ function toConfirm(){
 function editNick(){$('igConf').hidden=true;$('igStep').hidden=false;confirmed=null;ig.focus();ig.select()}
 $('confEdit').addEventListener('click',editNick);
 $('confSend').addEventListener('click',()=>submitOrder());
+/* ---------- reference files ----------
+   Up to 5. Photos are shrunk in the browser (max 2048 px, JPEG) so even a 25 MB phone photo
+   uploads in a second or two; PDFs up to 3 MB go as they are (server limit ~4.5 MB per upload). */
+const REF_MAX=5,IMG_MAX=25*1024*1024,PDF_MAX=3*1024*1024,OUT_MAX=2.9*1024*1024;
+let refs=[],refCtx=null;
+const fmtSize=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+function decodeImage(f){
+  return (window.createImageBitmap?createImageBitmap(f):Promise.reject()).catch(()=>new Promise((res,rej)=>{
+    const u=URL.createObjectURL(f),im=new Image();im.onload=()=>res(im);im.onerror=()=>{URL.revokeObjectURL(u);rej()};im.src=u}));
+}
+async function shrink(src,max,q){
+  const w=src.width,h=src.height,k=Math.min(1,max/Math.max(w,h));
+  const c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);
+  return new Promise(r=>c.toBlob(r,'image/jpeg',q));
+}
+async function prepRef(f){
+  const isPdf=f.type==='application/pdf'||/\.pdf$/i.test(f.name);
+  if(isPdf){if(f.size>PDF_MAX)throw `PDF is ${fmtSize(f.size)} — the limit is 3 MB. Send a smaller PDF or a screenshot.`;return {name:f.name,type:'application/pdf',blob:f,thumb:null}}
+  const isImg=(f.type||'').startsWith('image/')||/\.(heic|heif|jpe?g|png|webp)$/i.test(f.name);
+  if(!isImg)throw 'only photos (JPG, PNG, WEBP, HEIC) or PDF.';
+  if(f.size>IMG_MAX)throw `the photo is ${fmtSize(f.size)} — the limit is 25 MB.`;
+  let img;try{img=await decodeImage(f)}catch(e){throw 'can’t open this image here — try saving it as JPG or PNG.'}
+  let blob=await shrink(img,2048,.86);
+  if(blob&&blob.size>OUT_MAX)blob=await shrink(img,1600,.72);
+  if(!blob)throw 'can’t open this image here — try saving it as JPG or PNG.';
+  return {name:f.name.replace(/\.[^.]+$/,'')+'.jpg',type:'image/jpeg',blob,thumb:URL.createObjectURL(blob)};
+}
+function renderRefs(){
+  $('refList').innerHTML=refs.map((r,i)=>`<li class="${r.state||''}">${r.thumb?`<img class="th" src="${r.thumb}" alt="">`:'<span class="th">PDF</span>'}
+    <span class="nm">${esc(r.name)}<small>${r.state==='wait'?'Uploading…':r.state==='bad'?'Didn’t upload':r.state==='ok'?'Sent ✓':fmtSize(r.blob.size)}</small></span>
+    ${r.state?'':`<button type="button" class="rm" data-i="${i}" aria-label="Remove ${esc(r.name)}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`}</li>`).join('');
+  $('refs').classList.toggle('full',refs.length>=REF_MAX);
+  $('refAdd').querySelector('span').textContent=refs.length?'Add more':'Add files';
+}
+async function addRefs(files){
+  const errs=[];
+  for(const f of files){
+    if(refs.length>=REF_MAX){errs.push(`You can attach up to ${REF_MAX} files.`);break}
+    try{refs.push(await prepRef(f));renderRefs()}catch(m){errs.push(`${f.name}: ${m}`)}
+  }
+  renderRefs();$('refErr').textContent=errs.join(' ');
+}
+$('refInput').addEventListener('change',e=>{const f=[...e.target.files];e.target.value='';$('refErr').textContent=f.length?'Preparing…':'';addRefs(f)});
+$('refList').addEventListener('click',e=>{const b=e.target.closest('.rm');if(!b)return;const r=refs.splice(+b.dataset.i,1)[0];if(r&&r.thumb)URL.revokeObjectURL(r.thumb);renderRefs();$('refErr').textContent=''});
+{const z=$('refs');['dragenter','dragover'].forEach(t=>z.addEventListener(t,e=>{e.preventDefault();z.classList.add('drag')}));
+ ['dragleave','drop'].forEach(t=>z.addEventListener(t,e=>{e.preventDefault();z.classList.remove('drag')}));
+ z.addEventListener('drop',e=>addRefs([...(e.dataTransfer&&e.dataTransfer.files||[])]))}
+const toB64=blob=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(blob)});
+async function uploadRefs(btn){
+  if(!refCtx)return 0;
+  let bad=0;
+  for(let i=0;i<refs.length;i++){
+    const r=refs[i];if(r.state==='ok')continue;
+    r.state='wait';renderRefs();if(btn)btn.textContent=`Sending files ${i+1}/${refs.length}…`;
+    try{
+      const res=await fetch('/api/attach',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...refCtx,idx:i,total:refs.length,name:r.name,type:r.type,data:await toB64(r.blob)})});
+      r.state=res.ok?'ok':'bad';
+    }catch(e){r.state='bad'}
+    if(r.state==='bad')bad++;
+    renderRefs();
+  }
+  return bad;
+}
+function showRefWarn(bad){
+  $('refWarn').hidden=!bad;
+  $('refWarnText').textContent=bad?`Your request is in, but ${bad} reference file${bad>1?'s':''} didn’t upload. Try again, or just send ${bad>1?'them':'it'} to us in DM.`:'';
+}
+$('refRetry').addEventListener('click',async()=>{const b=$('refRetry');b.disabled=true;const bad=await uploadRefs(b);b.disabled=false;b.textContent='Try uploading again';showRefWarn(bad)});
 const newId=()=>(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
 function submitOrder(){
   if(inflight)return;
@@ -989,7 +1086,7 @@ function submitOrder(){
   // same nickname + same order = same request id, so "Try again" can never create a second request
   const key=JSON.stringify(payload);
   if(!attempt||attempt.key!==key)attempt={key,id:newId()};
-  payload.requestId=attempt.id;payload.website=$('website').value;payload.typed=confirmed.typed;
+  payload.requestId=attempt.id;payload.website=$('website').value;payload.typed=confirmed.typed;payload.files=refs.length;
   const send=$('confSend');
   inflight=true;send.disabled=true;send.setAttribute('aria-busy','true');send.textContent='Sending…';$('confEdit').disabled=true;$('retry').disabled=true;$('retry').textContent='Sending…';
   const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),17000);
@@ -998,8 +1095,10 @@ function submitOrder(){
     .then(async r=>{
       if(r.status===400){const j=await r.json().catch(()=>({}));if(j.error==='bad_instagram'){show('form');editNick();setErr(igError(n)||'That nickname doesn’t look right — check it and try again.');return}}
       if(!r.ok)throw new Error('http '+r.status);
+      const j=await r.json().catch(()=>({}));
+      if(refs.length&&j.sig&&j.messageId){refCtx={requestId:payload.requestId,messageId:j.messageId,sig:j.sig};showRefWarn(await uploadRefs(send))}else showRefWarn(0);
       sent=true;
-      $('dline').textContent=`Thanks, @${n}! We got your request: ${order.lines[0]}${order.lines.length>1?' and more':''} — ${order.price} + shipping.`;
+      $('dline').textContent=`Thanks, @${n}! We got your request${j.no?` #${j.no}`:''}: ${order.lines[0]}${order.lines.length>1?' and more':''} — ${order.price} + shipping.`;
       show('done');$('back').focus();
     })
     .catch(()=>{show('fail');$('retry').focus()})
@@ -1014,6 +1113,6 @@ if(reduce||!('IntersectionObserver' in window))els.forEach(e=>e.classList.add('i
 else{const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.2});els.forEach(e=>io.observe(e))}}
 }
 </script>
-<script src="app.js?v=202611272243" async></script>
+<script src="app.js?v=202611272300" async></script>
 </body>
 </html>
