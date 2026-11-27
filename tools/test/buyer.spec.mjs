@@ -182,12 +182,13 @@ test('model files fail to load: photos stay, loader and drag hints disappear', a
   await expect(page.locator('#deck')).toHaveClass(/ready/, { timeout: 8000 });
   await page.locator('.cc.front').click();
   await expect(page.locator('#viewer')).toHaveCount(0, { timeout: 5000 }); // the 3D slide removes itself
+  await expect(page.locator('#slides img').first()).toHaveAttribute('src', /ruler/);
+  await expect(page.locator('#pcount')).toHaveText('1 / 3');
   await expect(page.locator('#slides')).not.toContainText('Loading');
   await expect(page.locator('#slides')).not.toContainText('Drag');
   await page.click('#pclose');
   await page.locator('#price').scrollIntoViewIfNeeded();
-  await expect(page.locator('#vposter')).toBeVisible();
-  await expect(page.locator('#calcView .spin')).toBeHidden();
+  await expect(page.locator('#calcView')).toBeHidden();
 });
 
 test('3D works: hero swaps in, viewer opens for several cards, calculator preview tools', async ({ page }) => {
@@ -219,4 +220,48 @@ test('3D works: hero swaps in, viewer opens for several cards, calculator previe
   await page.keyboard.press('Escape');
   await expect(page.locator('#calcView')).not.toHaveClass(/full/);
   expect(errors).toEqual([]);
+});
+
+test('3D too slow: after the timeout the whole site stays on photos', async ({ page }) => {
+  test.slow();
+  await page.route('**/*.glb', () => { /* never answers */ });
+  await page.goto('/index.html');
+  await expect(page.locator('.hero-photo')).toBeVisible();
+  await expect(page.locator('html')).toHaveClass(/no3d/, { timeout: 30_000 });
+  await expect(page.locator('#stage')).toHaveCount(0);
+  await page.locator('#portfolio').scrollIntoViewIfNeeded();
+  await expect(page.locator('#deck')).toHaveClass(/ready/, { timeout: 8000 });
+  await page.locator('.cc.front').click();
+  await expect(page.locator('#viewer')).toHaveCount(0);
+  await expect(page.locator('#slides img').first()).toHaveAttribute('src', /ruler/);
+  await page.click('#pclose');
+  await page.locator('#price').scrollIntoViewIfNeeded();
+  await expect(page.locator('#calcView')).toBeHidden();
+});
+
+test('gallery always opens on the first slide of the next card', async ({ page }) => {
+  await page.goto('/index.html');
+  await page.locator('#portfolio').scrollIntoViewIfNeeded();
+  await expect(page.locator('#deck')).toHaveClass(/ready/, { timeout: 8000 });
+  await page.locator('.cc.front').click();
+  await expect(page.locator('#pm')).toBeVisible();
+  await page.evaluate(() => { const s = document.getElementById('slides'); s.scrollLeft = s.clientWidth * 3; });
+  await expect(page.locator('#pcount')).toHaveText(/^4 \//);
+  await page.click('#pclose'); await expect(page.locator('#pm')).toBeHidden();
+  await page.click('#dnext'); await page.waitForTimeout(700);
+  await page.locator('.cc.front').click();
+  await expect(page.locator('#pname')).toHaveText('Graffiti Hood');
+  await expect(page.locator('#pcount')).toHaveText(/^1 \//);
+  await page.click('#next');
+  await expect(page.locator('#pcount')).toHaveText(/^2 \//);
+});
+
+test('nav order and no Extras row in cards', async ({ page }) => {
+  await page.goto('/index.html');
+  const links = await page.locator('.nav .links a:not(.btn):not(.ig)').allInnerTexts();
+  if (links.length) expect(links.map((t) => t.trim().toLowerCase())).toEqual(['portfolio', 'price', 'process', 'contacts']);
+  await page.locator('#portfolio').scrollIntoViewIfNeeded();
+  await expect(page.locator('#deck')).toHaveClass(/ready/, { timeout: 8000 });
+  await page.locator('.cc.front').click();
+  await expect(page.locator('#pspecs')).not.toContainText('Extras');
 });
