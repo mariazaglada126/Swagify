@@ -4,7 +4,7 @@
 // after a lost response is answered from memory instead of posting the order twice.
 // Who gets the requests: Telegram user @layylyon. Their chat id is filled in once found via /api/request?setup
 const NOTIFY_USERNAME = 'layylyon';
-const DEFAULT_CHAT_ID = '';
+const DEFAULT_CHAT_ID = '624398287'; // @layylyon (not secret: only this bot's token can write there)
 const chatId = () => process.env.TELEGRAM_CHAT_ID || DEFAULT_CHAT_ID;
 const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 const IG = /^(?!\.)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]{1,30}$/;
