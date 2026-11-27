@@ -141,10 +141,18 @@ function fitTo(el, renderer, camera) {
       el.appendChild(vr.domElement);
       Object.assign(vr.domElement.style, { width: '100%', height: '100%', display: 'block' });
       if (current) vs.remove(current);
-      vc.position.set(0, 0.55, 2.4); ctl.target.set(0, 0.5, 0); ctl.autoRotate = !reduce;
+      vc.position.set(0, 0.55, 2.4); ctl.target.set(0, 0.5, 0); ctl.minDistance = 0.6; ctl.maxDistance = 3.2; ctl.autoRotate = !reduce;
       el.classList.remove('ready');
       (opts.key ? loadKey(url).then((k) => { const g = new THREE.Group(); const c = k.clone(true); const m = new THREE.MeshStandardMaterial({ color: 0x2f9fe0, roughness: 0.35 }); c.traverse((o) => { if (o.isMesh && o.userData.plate) o.material = m; }); c.scale.setScalar(0.9); c.position.y = 0.5; g.add(c); return g; }) : loadModel(url))
-        .then((m) => { if (holder !== el) return; current = m; vs.add(m); el.classList.add('ready'); })
+        .then((m) => {
+          if (holder !== el) return; current = m; vs.add(m);
+          if (!opts.key) { // frame any model height (e.g. a keychain with its ring and chain)
+            const h = Math.max(1, new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3()).y);
+            vc.position.set(0, 0.55 * h, 2.4 * h); ctl.target.set(0, 0.5 * h, 0);
+            ctl.minDistance = 0.6 * h; ctl.maxDistance = 3.2 * h; ctl.update();
+          }
+          el.classList.add('ready');
+        })
         .catch(() => el.classList.add('no3d'));
       ro = new ResizeObserver(() => fitTo(el, vr, vc)); ro.observe(el); fitTo(el, vr, vc);
       cancelAnimationFrame(raf); loop();

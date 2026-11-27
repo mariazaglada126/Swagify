@@ -43,9 +43,10 @@ h2{font:400 clamp(40px,6vw,80px)/.92 'Archivo Black',sans-serif;margin:0;text-tr
 .poster{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
 .word{position:absolute;left:50%;top:11vh;width:min(94vw,1500px);aspect-ratio:435/108.5;background:url(logo-word.svg) center/contain no-repeat;
   filter:drop-shadow(.6vw .7vw 0 var(--navy)) drop-shadow(.6vw .7vw 0 var(--ink));transform:translateX(-50%) translateY(calc(var(--p)*-5vh)) scale(calc(1 + var(--p)*.06))}
-.side{position:absolute;bottom:9vh;margin:0;padding:0;list-style:none;font:400 clamp(28px,4.6vw,78px)/1.02 'Archivo Black',sans-serif;color:rgba(255,255,255,.34);text-transform:uppercase}
-.side.l{left:-.08em;transform:translateX(calc(var(--p)*-40vw))}
-.side.r{right:-.08em;text-align:right;transform:translateX(calc(var(--p)*40vw))}
+.side{position:absolute;z-index:2;bottom:8vh;margin:0;padding:0;list-style:none;pointer-events:none;font:400 clamp(44px,7.4vw,140px)/.96 'Archivo Black',sans-serif;color:#fff;text-transform:uppercase;letter-spacing:-.01em;
+  -webkit-text-stroke:.022em var(--ink);paint-order:stroke fill;text-shadow:.045em .055em 0 var(--navy),.09em .11em 0 var(--ink)}
+.side.l{left:3vw;transform:translateX(calc(var(--p)*-45vw))}
+.side.r{right:3vw;text-align:right;transform:translateX(calc(var(--p)*45vw))}
 #stage{position:absolute;inset:0}
 #stage canvas{width:100%;height:100%;display:block}
 #loader{position:absolute;left:50%;top:58%;transform:translate(-50%,-50%);font-weight:700;color:var(--ink);background:rgba(255,255,255,.6);padding:8px 16px;border-radius:999px}
@@ -264,7 +265,10 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
   .nav .links a:not(.btn):not(.ig){display:none}
   .nav{flex-wrap:nowrap}.nav img{height:34px}.nav .links{gap:10px;flex-wrap:nowrap}.nav .btn{padding:8px 14px;font-size:12px}
   .word{top:15vh}
-  .side{bottom:12vh;font-size:clamp(22px,7vw,34px)}
+  .side{font-size:clamp(30px,9.3vw,60px);line-height:1;white-space:nowrap}
+  .side li{display:inline}.side li+li{margin-left:.28em}
+  .side.l{left:4vw;bottom:calc(9vh + 1.08em)}
+  .side.r{right:4vw;bottom:9vh}
   .gal{border-radius:28px 28px 0 0}
   .slides{height:58svh}
   .pinfo{padding:24px}
@@ -525,8 +529,8 @@ const WORKS=[
   {name:'White Angel',img:'fig4.webp',model:'fig4.glb',c:'#f4f4f2',t:'#141414',cfg:{size:20,details:'complex',painted:true,qty:1,extras:[]},photos:ph('whiteangel')},
   {name:'Red Angel',img:'fig5.webp',model:'fig5.glb',c:'#24378d',t:'#ffffff',cfg:{size:25,details:'complex',painted:true,qty:1,extras:[]},photos:ph('redangel')},
   {name:'Masked One',img:'fig6.webp',model:'fig6.glb',c:'#2e2d2c',t:'#ffffff',cfg:{size:26,details:'complex',painted:true,qty:1,extras:[]},photos:ph('masked')},
-  {kind:'key',name:'Daisy Keychain',img:'fig1.webp',model:'fig1.glb',c:'#f6c9dc',t:'#141414',cfg:{size:5,pack:5,color:'Pink'},photos:ph('daisy')},
-  {kind:'key',logo:true,name:'Swagify Keychain',img:'keychain.webp',model:'keychain.glb',c:'#bfe9fa',t:'#141414',cfg:{size:5,pack:5,color:'Blue'},photos:ph('swagkey',{noRuler:true})}
+  {kind:'key',name:'Daisy Keychain',img:'daisy.webp',model:'daisy.glb',c:'#f6c9dc',t:'#141414',cfg:{size:5,pack:5,color:'Pink'},photos:ph('daisy')},
+  {kind:'key',logo:true,name:'Swagify Keychain',img:'keychain.webp',model:'keychain.glb',c:'#bfe9fa',t:'#141414',cfg:{size:5,pack:5,color:'Blue'},photos:ph('swagkey')}
 ];
 const deck=$('deck'),N=WORKS.length;
 const typeLine=w=>w.kind==='key'?`Keychain · 5 cm · solid color`:`Figure · ${F.size.find(o=>o.id===w.cfg.size).l} · ${w.cfg.painted?'painted':'unpainted'}`;
