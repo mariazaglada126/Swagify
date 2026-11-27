@@ -512,15 +512,13 @@ const ph=(k,o={})=>[o.noInterior?{slot:'In an interior',hint:'photo coming soon'
   {src:`photos/${k}-detail.webp`,label:'Detail',fit:'contain'},
   ...(o.noRuler?[]:[{src:`photos/${k}-ruler.webp`,narrow:`photos/${k}-ruler-narrow.webp`,label:'Size with a ruler',fit:'contain'}])];
 const WORKS=[
-  {name:'Hoodie Kid',img:'nova.webp',model:'figure-hd.glb',c:'#42c0ef',t:'#141414',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},
-   photos:[{slot:'In an interior',hint:'photo coming soon'},{slot:'Detail',hint:'photo coming soon'},{slot:'Size with a ruler',hint:'photo coming soon'}]},
-  {kind:'key',logo:true,name:'Swagify Keychain',img:'keychain.webp',model:'keychain.glb',c:'#bfe9fa',t:'#141414',cfg:{size:5,pack:5,color:'Blue'},photos:ph('swagkey',{noInterior:true,noRuler:true})},
   {name:'Plano',img:'fig2.webp',model:'fig2.glb',c:'#e4e4ea',t:'#141414',cfg:{size:10,details:'complex',painted:true,qty:1,extras:[]},photos:ph('plano')},
   {name:'Graffiti Hood',img:'fig3.webp',model:'fig3.glb',c:'#f1e6d3',t:'#141414',cfg:{size:15,details:'complex',painted:true,qty:1,extras:[]},photos:ph('graffiti')},
-  {kind:'key',name:'Daisy Keychain',img:'fig1.webp',model:'fig1.glb',c:'#f6c9dc',t:'#141414',cfg:{size:5,pack:5,color:'Pink'},photos:ph('daisy')},
   {name:'White Angel',img:'fig4.webp',model:'fig4.glb',c:'#f4f4f2',t:'#141414',cfg:{size:20,details:'complex',painted:true,qty:1,extras:[]},photos:ph('whiteangel')},
   {name:'Red Angel',img:'fig5.webp',model:'fig5.glb',c:'#24378d',t:'#ffffff',cfg:{size:25,details:'complex',painted:true,qty:1,extras:[]},photos:ph('redangel')},
-  {name:'Masked One',img:'fig6.webp',model:'fig6.glb',c:'#2e2d2c',t:'#ffffff',cfg:{size:26,details:'complex',painted:true,qty:1,extras:[]},photos:ph('masked')}
+  {name:'Masked One',img:'fig6.webp',model:'fig6.glb',c:'#2e2d2c',t:'#ffffff',cfg:{size:26,details:'complex',painted:true,qty:1,extras:[]},photos:ph('masked')},
+  {kind:'key',name:'Daisy Keychain',img:'fig1.webp',model:'fig1.glb',c:'#f6c9dc',t:'#141414',cfg:{size:5,pack:5,color:'Pink'},photos:ph('daisy')},
+  {kind:'key',logo:true,name:'Swagify Keychain',img:'keychain.webp',model:'keychain.glb',c:'#bfe9fa',t:'#141414',cfg:{size:5,pack:5,color:'Blue'},photos:ph('swagkey',{noRuler:true})}
 ];
 const deck=$('deck'),N=WORKS.length;
 const typeLine=w=>w.kind==='key'?`Keychain · 5 cm · solid color`:`Figure · ${F.size.find(o=>o.id===w.cfg.size).l} · ${w.cfg.painted?'painted':'unpainted'}`;
