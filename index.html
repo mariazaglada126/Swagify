@@ -244,6 +244,11 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 .state .row{display:flex;flex-wrap:wrap;gap:10px}
 .state .btn.ghost{background:#fff;color:var(--ink);box-shadow:none}
 
+.kick{margin:0 0 -14px;font:400 clamp(16px,1.6vw,20px) 'Permanent Marker',cursive;color:var(--navy);transform:rotate(-2deg);transform-origin:left}
+.kick.light{color:var(--cyan);margin-bottom:10px}
+.ship{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:13px;font-weight:700;color:var(--cyan)}
+.ship svg{flex:none}
+.ship.dark{color:var(--ink);background:#e7f6fd;border-radius:999px;padding:8px 14px;align-self:flex-start}
 /* request modal */
 .modal{position:fixed;inset:0;z-index:50;background:rgba(10,10,10,.82);display:grid;place-items:center;padding:20px}
 .dialog{position:relative;width:100%;max-width:520px;background:var(--paper);color:var(--ink);border-radius:28px;box-shadow:8px 10px 0 var(--cyan);padding:34px}
@@ -282,11 +287,11 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
   </div>
 </nav>
 
-<section id="hero" aria-label="Swagify handmade figures">
+<section id="hero" aria-label="Swagify — create your unique figure">
   <div class="poster">
     <div class="word" role="img" aria-label="Swagify"></div>
-    <ul class="side l" aria-hidden="true"><li>Sculpt</li><li>Paint</li><li>Drip</li></ul>
-    <ul class="side r" aria-hidden="true"><li>Always</li><li>Stay</li><li>Swag</li></ul>
+    <ul class="side l" aria-hidden="true"><li>Create</li><li>your</li></ul>
+    <ul class="side r" aria-hidden="true"><li>unique</li><li>figure</li></ul>
     <div class="fallback" role="img" aria-label="Swagify mascot logo"></div>
     <div id="stage" data-model="figure-hd.glb" role="img" aria-label="3D model of a Swagify handmade figure, turning as you scroll"></div>
     <p id="loader">Loading figure <b>0%</b></p>
@@ -294,8 +299,8 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
 </section>
 
 <div class="marq" aria-hidden="true"><div>
-  <span>HANDMADE <i>★</i> ONE OF ONE <i>★</i> PAINTED BY HAND <i>★</i> FIGURES & KEYCHAINS <i>★</i> SWAGIFY <i>★</i> </span>
-  <span>HANDMADE <i>★</i> ONE OF ONE <i>★</i> PAINTED BY HAND <i>★</i> FIGURES & KEYCHAINS <i>★</i> SWAGIFY <i>★</i> </span>
+  <span>CREATE YOUR UNIQUE FIGURE <i>★</i> HANDMADE <i>★</i> FIGURES & KEYCHAINS <i>★</i> SWAGIFY <i>★</i> </span>
+  <span>CREATE YOUR UNIQUE FIGURE <i>★</i> HANDMADE <i>★</i> FIGURES & KEYCHAINS <i>★</i> SWAGIFY <i>★</i> </span>
 </div></div>
 
 <section id="portfolio" class="band">
@@ -314,6 +319,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
 <section id="price" class="calc band">
   <div class="wrap">
     <div class="opts">
+      <p class="kick">Create your unique figure</p>
       <h2>Build your order</h2>
       <div class="seg" role="group" aria-label="What do you want to order? Pick one or both">
         <button type="button" id="tFig" aria-pressed="true">Figures</button>
@@ -366,6 +372,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
         <p class="sub">Estimated price</p>
         <p class="price" id="total" aria-live="polite">$0</p>
         <p class="sub" id="note">Final price confirmed in DM.</p>
+        <p class="ship"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg>Shipping is not included — it’s paid separately.</p>
       </div>
       <p class="err" id="calcErr" role="alert"></p>
       <button class="btn" id="open" type="button">Leave a request</button>
@@ -410,7 +417,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
         <div class="txt"><h3>Your figure + approval</h3><p>We make and paint the figure by hand, then send you photos or a video so you can approve it before shipping.</p></div>
         <div class="pic"><img src="step-figure.webp" alt="" loading="lazy"></div></div></li>
       <li class="reveal"><span class="num">07</span><div class="pcard">
-        <div class="txt"><h3>Shipping</h3><p>We pack your figure carefully and ship it to you.</p></div>
+        <div class="txt"><h3>Shipping</h3><p>We pack your figure carefully and ship it to you. Shipping isn’t free: its cost depends on where you are and is paid separately — we’ll tell you the exact price in DM.</p></div>
         <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span></div></li>
     </ol>
   </div></div>
@@ -418,11 +425,11 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
 
 <section id="contacts" class="contacts band">
   <div class="wrap">
-    <h2>Slide into<br><span>the DMs.</span></h2>
+    <div><p class="kick light">Create your unique figure</p><h2>Slide into<br><span>the DMs.</span></h2></div>
     <a class="btn" href="https://www.instagram.com/swagify.figures?fqnt=MTljNGg2ZjVyc2t6Zw%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r=".6" fill="currentColor"/></svg>@swagify.figures</a>
   </div>
 </section>
-<footer><div class="wrap"><span>© 2026 Swagify — Handmade figures</span><span class="marker" style="color:#fff">stay swag ★</span></div></footer>
+<footer><div class="wrap"><span>© 2026 Swagify — Handmade figures · Shipping paid separately</span><span class="marker" style="color:#fff">stay swag ★</span></div></footer>
 
 <div class="pm" id="pm" hidden>
   <div class="pbox" role="dialog" aria-modal="true" aria-labelledby="pname">
@@ -439,6 +446,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
       <h3 id="pname"></h3>
       <dl class="specs" id="pspecs"></dl>
       <p class="pprice" id="pprice"></p>
+      <p class="ship dark">Shipping is not included — it’s paid separately.</p>
       <button class="btn" type="button" id="porder">Order one like this</button>
     </div>
   </div>
@@ -756,7 +764,7 @@ const modal=$('modal'),form=$('form'),done=$('done'),fail=$('fail'),ig=$('ig'),e
 function show(v){form.hidden=v!=='form';done.hidden=v!=='done';fail.hidden=v!=='fail'}
 function openReq(){if(S.ok===false){$('calcErr').scrollIntoView({block:'center',behavior:'smooth'});return}
   sent=false;show('form');err.textContent='';
-  $('mline').textContent=`Your order: ${S.lines.join(', ')} — ${S.from?'from ':''}$${S.total}. We’ll DM you on Instagram to talk details.`;
+  $('mline').textContent=`Your order: ${S.lines.join(', ')} — ${S.from?'from ':''}$${S.total} + shipping (paid separately). We’ll DM you on Instagram to talk details.`;
   modal.hidden=false;ig.focus()}
 function closeReq(){
   modal.hidden=true;
