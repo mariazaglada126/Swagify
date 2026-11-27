@@ -37,11 +37,15 @@ async function handler(req, res) {
       // one-time helper: find the chat id of @layylyon among people who wrote to the bot
       if (!token) return res.status(200).json({ ok: false, step: 'add TELEGRAM_BOT_TOKEN in Vercel and redeploy' });
       try {
-        const r = await (handler.fetch || fetch)(`https://api.telegram.org/bot${token}/getUpdates`);
-        const j = await r.json();
-        const chats = (j.result || []).map((u) => (u.message || u.edited_message || {}).chat).filter(Boolean);
+        const f = handler.fetch || fetch;
+        const bot = await (await f(`https://api.telegram.org/bot${token}/getMe`)).json();
+        if (!bot.ok) return res.status(200).json({ ok: false, step: 'the token in Vercel is not valid — copy it again from BotFather' });
+        const j = await (await f(`https://api.telegram.org/bot${token}/getUpdates`)).json();
+        const chats = (j.result || []).map((u) => (u.message || u.edited_message || u.my_chat_member || {}).chat).filter(Boolean);
         const me = chats.find((c) => String(c.username || '').toLowerCase() === NOTIFY_USERNAME);
-        return res.status(200).json(me ? { ok: true, chat_id: String(me.id), username: me.username } : { ok: false, step: `write any message to the bot from @${NOTIFY_USERNAME}, then reload` });
+        if (me) return res.status(200).json({ ok: true, chat_id: String(me.id), username: me.username });
+        const seen = [...new Map(chats.map((c) => [c.id, { username: c.username || null, name: c.first_name || c.title || null }])).values()];
+        return res.status(200).json({ ok: false, bot: '@' + bot.result.username, updates: (j.result || []).length, getUpdatesError: j.ok ? undefined : j.description, wrote_to_bot: seen, step: `open https://t.me/${bot.result.username} from @${NOTIFY_USERNAME}, press Start / write any message, then reload` });
       } catch (e) { return res.status(200).json({ ok: false, step: 'could not reach Telegram, reload in a minute' }); }
     }
     return res.status(200).json({ ok: true, configured: !!(token && chatId()) });
