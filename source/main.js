@@ -21,10 +21,50 @@ const mapUrl = (u) => {
   if (PHONE) return u.replace('.glb', '-m.glb');
   return DESKTOP_MODELS === '2k' ? u.replace('.glb', '-2k.glb') : u;
 };
-function loadModel(url, onProgress) {
+/* Download progress, in real bytes. File sizes are baked in at build time (MODEL_SIZES), because a
+   compressed response may not report a usable total. */
+const SIZES = typeof MODEL_SIZES !== 'undefined' ? MODEL_SIZES : {};
+const prog = {}; const progL = new Set();
+const emitProg = () => progL.forEach((f) => f());
+function onBytes(url) {
+  const st = prog[url] || (prog[url] = { loaded: 0, total: SIZES[url] || 0, done: false });
+  return (e) => { st.loaded = e.loaded; if (!st.total && e.lengthComputable) st.total = e.total; emitProg(); };
+}
+function doneBytes(url) { (prog[url] || (prog[url] = { loaded: 0, total: SIZES[url] || 0 })).done = true; emitProg(); }
+function watchProgress(urls, cb) {
+  const f = () => {
+    let l = 0, t = 0, all = true;
+    for (const u of urls) {
+      const st = prog[u], T = SIZES[u] || (st && st.total) || 1; t += T;
+      if (st && st.done) l += T; else { all = false; if (st) l += Math.min(st.loaded, T); }
+    }
+    cb(all ? 100 : Math.min(99, Math.floor((l / t) * 100)));
+  };
+  progL.add(f); f();
+  return () => progL.delete(f);
+}
+/* Too slow = no new bytes for 10 s, or not finished after 40 s → photos for this visit. */
+function slowGuard(urls, onSlow) {
+  let last = -1, lastT = Date.now(); const t0 = Date.now();
+  const un = watchProgress(urls.map(mapUrl), (p) => { if (p !== last) { last = p; lastT = Date.now(); } });
+  const iv = setInterval(() => { const now = Date.now(); if (now - lastT > 10000 || now - t0 > 40000) { stop(); onSlow(); } }, 1000);
+  const stop = () => { clearInterval(iv); un(); };
+  return stop;
+}
+/* "Loading 3D 42%" pill: appears only if the model is not on screen within 350 ms */
+function loadingPill(el, urls, existing) {
+  const box = existing || document.createElement('div');
+  if (!existing) { box.className = 'load3d'; box.hidden = true; box.innerHTML = '<span>Loading 3D</span><b>0%</b><i><u></u></i>'; el.appendChild(box); }
+  const b = box.querySelector('b'), u = box.querySelector('u');
+  const t = setTimeout(() => { box.hidden = false; }, 350);
+  const un = watchProgress(urls.map(mapUrl), (p) => { b.textContent = p + '%'; u.style.width = p + '%'; });
+  return () => { clearTimeout(t); un(); if (existing) box.hidden = true; else box.remove(); };
+}
+function loadModel(url) {
   url = mapUrl(url);
   if (!pending[url]) {
     pending[url] = new Promise((res, rej) => gltfLoader.load(url, (g) => {
+      doneBytes(url);
       const m = g.scene;
       const b = new THREE.Box3().setFromObject(m);
       const c = b.getCenter(new THREE.Vector3());
@@ -32,13 +72,13 @@ function loadModel(url, onProgress) {
       const p = new THREE.Group();
       p.add(m);
       res(p);
-    }, onProgress, (e) => { delete pending[url]; rej(e); }));
+    }, onBytes(url), (e) => { delete pending[url]; delete prog[url]; rej(e); }));
   }
   return pending[url];
 }
 function dropModel(url) {
   url = mapUrl(url);
-  const pr = pending[url]; if (!pr) return; delete pending[url];
+  const pr = pending[url]; if (!pr) return; delete pending[url]; delete prog[url];
   pr.then((g) => g.traverse((o) => {
     if (!o.isMesh) return; o.geometry.dispose();
     [].concat(o.material).forEach((m) => { Object.values(m).forEach((v) => v && v.isTexture && v.dispose()); m.dispose(); });
@@ -48,6 +88,7 @@ const keyPending = {};
 function loadKey(url) {
   if (!keyPending[url]) {
     keyPending[url] = new Promise((res, rej) => gltfLoader.load(url, (g) => {
+      doneBytes(url);
       const inner = new THREE.Group(); inner.add(g.scene); inner.rotation.x = Math.PI / 2 - 0.45;
       const wrap = new THREE.Group(); wrap.add(inner);
       const b = new THREE.Box3().setFromObject(wrap); const c = b.getCenter(new THREE.Vector3()); const sz = b.getSize(new THREE.Vector3());
@@ -57,7 +98,7 @@ function loadKey(url) {
       g.scene.traverse((o) => { if (o.isMesh) o.userData.plate = !(o.material && o.material.name === 'Material.001'); });
       const out = new THREE.Group(); out.add(wrap); out.userData.h = wrap.userData.h;
       res(out);
-    }, undefined, rej));
+    }, onBytes(url), (e) => { delete keyPending[url]; delete prog[url]; rej(e); }));
   }
   return keyPending[url];
 }
@@ -130,11 +171,13 @@ function fitTo(el, renderer, camera) {
     addLights(scene, 0x9fe6ff);
     const pivot = new THREE.Group(); scene.add(pivot); scene.add(softShadow());
     let model = null, H = 1, shown = false, dead = false, frames = 0;
-    const giveUp = (why) => { dead = true; document.body.classList.remove('hero3d'); stage.remove(); try { renderer.dispose(); renderer.forceContextLoss(); } catch (e) {} SW.off(why); };
+    const heroLoad = document.getElementById('heroLoad');
+    const stopPill = loadingPill(hero, [stage.dataset.model], heroLoad);
+    const giveUp = (why) => { dead = true; stopPill(); stopSlow(); document.body.classList.remove('hero3d'); stage.remove(); try { renderer.dispose(); renderer.forceContextLoss(); } catch (e) {} SW.off(why); };
     renderer.domElement.addEventListener('webglcontextlost', () => giveUp('context-lost'));
     window.addEventListener('sw3d-off', () => { if (!dead) giveUp('elsewhere'); });
-    // too slow → photo stays for good (the model keeps nothing on screen)
-    const slow = setTimeout(() => { if (!shown) giveUp('slow'); }, PHONE ? 15000 : 20000);
+    // too slow → photo for good
+    const stopSlow = slowGuard([stage.dataset.model], () => { if (!shown) giveUp('slow'); });
     loadModel(stage.dataset.model).then((m) => {
       if (dead) return;
       H = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3()).y || 1;
@@ -175,7 +218,7 @@ function fitTo(el, renderer, camera) {
         renderer.render(scene, camera);
         frames++;
         if ((frames === 3 || frames % 90 === 0) && frames < 1200 && looksBlack(renderer)) { giveUp('black'); return; }
-        if (!shown && frames >= 3) { shown = true; clearTimeout(slow); document.body.classList.add('hero3d'); }
+        if (!shown && frames >= 3) { shown = true; stopSlow(); stopPill(); document.body.classList.add('hero3d'); }
       }
       requestAnimationFrame(tick);
     };
@@ -204,7 +247,7 @@ function fitTo(el, renderer, camera) {
     vr.domElement.style.touchAction = 'none';
     vr.domElement.addEventListener('webglcontextlost', () => { if (holder) { holder.classList.remove('ready'); holder.classList.add('no3d'); } failCb && failCb(); SW.off('context-lost'); });
   }
-  let firstFrame = null, frames = 0, currentUrl = null;
+  let firstFrame = null, frames = 0, currentUrl = null; const closeHooks = [];
   const loop = () => {
     ctl.update(); vr.render(vs, vc);
     if (current) {
@@ -219,11 +262,14 @@ function fitTo(el, renderer, camera) {
     get supported() { return SW.on; },
     open(el, url, opts = {}) {
       let failed = false;
-      const fail = () => { if (failed) return; failed = true; clearTimeout(slow); el.classList.add('no3d'); cancelAnimationFrame(raf); opts.onFail && opts.onFail(); };
-      const slow = setTimeout(() => { if (!el.classList.contains('ready')) { fail(); SW.off('slow'); } }, PHONE ? 12000 : 15000);
+      let stopPill = () => {}, stopSlow = () => {};
+      const fail = () => { if (failed) return; failed = true; stopPill(); stopSlow(); el.classList.add('no3d'); cancelAnimationFrame(raf); opts.onFail && opts.onFail(); };
       if (!SW.on) { fail(); return; }
+      stopPill = loadingPill(el, [url]);
+      stopSlow = slowGuard([url], () => { if (!el.classList.contains('ready')) { fail(); SW.off('slow'); } });
       try { if (!vr) setup(); } catch (e) { fail(); SW.off('no-webgl'); return; }
       holder = el; failCb = fail; const id = ++openId; frames = 0;
+      closeHooks.push(() => { stopPill(); stopSlow(); });
       el.appendChild(vr.domElement);
       Object.assign(vr.domElement.style, { width: '100%', height: '100%', display: 'block' });
       if (current) { vs.remove(current); current = null; }
@@ -241,13 +287,13 @@ function fitTo(el, renderer, camera) {
             ctl.minDistance = 0.6 * h; ctl.maxDistance = 3.2 * h; ctl.update();
           }
           // reveal the 3D only once a frame with the model has actually been drawn
-          firstFrame = () => { if (holder === el && id === openId && !failed) { clearTimeout(slow); el.classList.add('ready'); } };
+          firstFrame = () => { if (holder === el && id === openId && !failed) { stopSlow(); stopPill(); el.classList.add('ready'); } };
         })
         .catch(() => { if (holder === el && id === openId) fail(); });
       ro = new ResizeObserver(() => fitTo(el, vr, vc)); ro.observe(el); fitTo(el, vr, vc);
       cancelAnimationFrame(raf); loop();
     },
-    close() { cancelAnimationFrame(raf); raf = 0; if (ro) ro.disconnect(); holder = null; failCb = null; firstFrame = null; }
+    close() { cancelAnimationFrame(raf); raf = 0; if (ro) ro.disconnect(); if (holder) { const l = holder.querySelector('.load3d'); l && l.remove(); } closeHooks.forEach((f) => f()); closeHooks.length = 0; holder = null; failCb = null; firstFrame = null; }
   };
 }
 
@@ -265,8 +311,10 @@ function fitTo(el, renderer, camera) {
     const fov = 30, tanH = Math.tan((fov / 2) * Math.PI / 180);
     let fitDist = 2.2, minH = 1.1, lastFit = 0, slowT = 0, dead = false;
     // no 3D here → the whole visualizer goes away (the price list stays)
+    let stopPill = null, stopSlow = null;
+    const endLoading = () => { stopPill && stopPill(); stopSlow && stopSlow(); stopPill = stopSlow = null; };
     function off() {
-      if (dead) return; dead = true; clearTimeout(slowT); cancelAnimationFrame(raf);
+      if (dead) return; dead = true; endLoading(); cancelAnimationFrame(raf);
       box.classList.add('no3d'); document.documentElement.classList.add('calc-no3d');
       if (r) { try { r.dispose(); r.forceContextLoss(); } catch (e) {} }
     }
@@ -278,7 +326,7 @@ function fitTo(el, renderer, camera) {
       try { r = makeRenderer(); } catch (e) { off(); return; }
       box.prepend(r.domElement);
       r.domElement.addEventListener('webglcontextlost', () => { off(); SW.off('context-lost'); });
-      slowT = setTimeout(() => { if (!box.classList.contains('ready3d')) { off(); SW.off('slow'); } }, PHONE ? 15000 : 20000);
+
       Object.assign(r.domElement.style, { width: '100%', height: '100%', display: 'block', touchAction: 'pan-y' });
       scene = new THREE.Scene(); addLights(scene, 0x9fe6ff);
       const sh = softShadow(3.2); scene.add(sh);
@@ -343,11 +391,18 @@ function fitTo(el, renderer, camera) {
       let models, keyBase = null;
       try {
         const need = [...new Set(figs.map((it) => urls[lod(it)]))];
+        // show real download progress for whatever this preview still has to fetch
+        const fetching = [...need, ...(keys.length ? [keyUrl] : [])].filter((u) => !(prog[mapUrl(u)] && prog[mapUrl(u)].done));
+        if (fetching.length && !stopPill) {
+          stopPill = loadingPill(box, fetching);
+          stopSlow = slowGuard(fetching, () => { off(); SW.off('slow'); });
+        }
         models = Object.fromEntries(await Promise.all(need.map(async (u) => [u, await loadModel(u)])));
         if (keys.length) keyBase = await loadKey(keyUrl);
       } catch (e) { box.classList.remove('busy'); off(); return; }
       if (dead) return;
       if (my !== token) return;
+      endLoading();
       const prevCount = group.children.length;
       group.clear();
       // figures: rows of up to 5 standing on the floor

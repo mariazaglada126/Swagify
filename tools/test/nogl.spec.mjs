@@ -31,17 +31,16 @@ test('photos everywhere, no stuck loaders, quote still works', async ({ page }) 
   await page.goto('/index.html');
   await expect(page.locator('html')).toHaveClass(/no3d/);
   await expect(page.locator('.hero-photo')).toBeVisible();
-  await expect(page.getByText(/Loading/)).toHaveCount(0);
+  await expect(page.locator('.load3d:visible')).toHaveCount(0);
   await page.locator('#price').scrollIntoViewIfNeeded();
-  await expect(page.locator('#vposter')).toBeVisible();
-  await expect(page.locator('#calcView .spin')).toBeHidden();
-  await expect(page.locator('#vfull')).toBeHidden();
+  await expect(page.locator('#calcView')).toBeHidden(); // no 3D → no visualizer
   await page.locator('#portfolio').scrollIntoViewIfNeeded();
   await expect(page.locator('#deck')).toHaveClass(/ready/, { timeout: 8000 });
   await page.locator('.cc.front').click();
   await expect(page.locator('#pm')).toBeVisible();
   await expect(page.locator('#viewer')).toHaveCount(0);
   await expect(page.locator('#slides img').first()).toBeVisible();
+  await expect(page.locator('#slides img').first()).toHaveAttribute('src', /ruler/);
   await expect(page.locator('#slides')).not.toContainText('Drag');
   await page.click('#porder');
   await page.fill('#ig', 'no3d.buyer'); await page.click('#send');

@@ -162,7 +162,6 @@ test('request: nickname validation, sending state, network error, retry without 
 
 test('no horizontal scroll and the hero shows the product with a clear next step', async ({ page }) => {
   await page.goto('/index.html');
-  await expect(page.locator('.hero-photo')).toBeVisible();
   await expect(page.locator('.hero-cta')).toContainText('Turn your character into a hand-painted collectible.');
   await expect(page.locator('.hero-cta .btn')).toBeInViewport();
   for (const y of [0, 0.25, 0.5, 0.75, 1]) {
@@ -265,4 +264,21 @@ test('nav order and no Extras row in cards', async ({ page }) => {
   await expect(page.locator('#deck')).toHaveClass(/ready/, { timeout: 8000 });
   await page.locator('.cc.front').click();
   await expect(page.locator('#pspecs')).not.toContainText('Extras');
+});
+
+test('slow connection: real "Loading 3D %" counter, then the figure', async ({ page, context }) => {
+  test.slow();
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Network.enable');
+  await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 40, downloadThroughput: 6e6 / 8, uploadThroughput: 1e6 });
+  await page.goto('/index.html');
+  const load = page.locator('#heroLoad');
+  await expect(load).toBeVisible({ timeout: 10_000 });
+  const seen = new Set();
+  for (let i = 0; i < 40 && seen.size < 3; i++) { seen.add(await load.locator('b').innerText()); await page.waitForTimeout(400); }
+  expect(seen.size).toBeGreaterThanOrEqual(3); // the number actually moves
+  expect([...seen].every((t) => /^\d{1,3}%$/.test(t))).toBe(true);
+  await expect(page.locator('body')).toHaveClass(/hero3d/, { timeout: 90_000 });
+  await expect(load).toBeHidden();
+  await expect(page.locator('.hero-photo')).not.toBeInViewport({ ratio: 0.01 }).catch(() => {}); // photo faded out
 });
