@@ -1,0 +1,222 @@
+// End-to-end buyer flows. Every POST to /api/request is intercepted — no real request reaches Telegram.
+import { test, expect } from '@playwright/test';
+
+const money = (s) => s.replace(/\s+/g, ' ').trim();
+
+async function mockApi(page, plan = ['ok']) {
+  const calls = [];
+  await page.route('**/api/request', async (route) => {
+    const body = JSON.parse(route.request().postData() || '{}');
+    calls.push(body);
+    const step = plan[Math.min(calls.length - 1, plan.length - 1)];
+    if (step === 'network') return route.abort('failed');
+    if (step === 'slow') { await new Promise((r) => setTimeout(r, 1200)); }
+    return route.fulfill({ status: step === '500' ? 500 : 200, contentType: 'application/json', body: JSON.stringify({ ok: step !== '500' }) });
+  });
+  return calls;
+}
+async function toCalc(page) {
+  await page.goto('/index.html');
+  await page.locator('#price').scrollIntoViewIfNeeded();
+}
+const total = (page) => page.locator('#total').innerText().then(money);
+// emulate a tap that does not move focus away from the field first (iOS Safari behaviour)
+const tapNoBlur = (page, sel) => page.evaluate((s) => document.querySelector(s).click(), sel);
+
+test('quantity: paste then straight to the quote keeps field, discount, total and request in sync', async ({ page }) => {
+  const calls = await mockApi(page);
+  await toCalc(page);
+  for (let i = 0; i < 5; i++) await page.click('#qp');
+  await page.click('#tKey');
+  await expect(page.locator('#q')).toHaveValue('6');
+  expect(await total(page)).toBe('$342');
+  // paste "3" after the 6 → 63
+  await page.focus('#q');
+  await page.keyboard.press('End');
+  await page.keyboard.insertText('3');
+  await expect(page.locator('#q')).toHaveValue('63');
+  expect(await total(page)).toBe('$2886'); // 63 × $55 × 0.82 = 2841.3 → $2841, + 10 keychains $45
+  await expect(page.locator('#sum')).toContainText('Quantity 63 (−18%)');
+  await tapNoBlur(page, '#open');
+  await expect(page.locator('#modal')).toBeVisible();
+  await expect(page.locator('#mlist')).toContainText('Quantity 63 (−18%)');
+  await expect(page.locator('#mtotal')).toHaveText('$2886');
+  await page.fill('#ig', 'test.buyer');
+  await page.click('#send');
+  await expect(page.locator('#done')).toBeVisible();
+  expect(calls).toHaveLength(1);
+  expect(calls[0].price).toBe('$2886');
+  expect(calls[0].lines).toContain('Quantity 63 (−18%)');
+});
+
+test('quantity: replace the whole value by paste and by mobile-style input events', async ({ page }) => {
+  await toCalc(page);
+  await page.fill('#q', '10'); // fill = select-all + insert, like a paste over the old value
+  expect(await total(page)).toBe('$451');
+  await page.evaluate(() => { const q = document.getElementById('q'); q.value = '6'; q.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertFromPaste' })); });
+  expect(await total(page)).toBe('$297');
+});
+
+test('discount thresholds up and down (15 cm painted = $55 each)', async ({ page }) => {
+  await toCalc(page);
+  const expected = { 1: '$55', 2: '$110', 3: '$157', 5: '$261', 6: '$297', 9: '$446', 10: '$451' };
+  const check = async (n) => { await expect(page.locator('#q')).toHaveValue(String(n)); if (expected[n]) expect(await total(page), `qty ${n}`).toBe(expected[n]); };
+  await check(1);
+  for (let n = 2; n <= 10; n++) { await page.click('#qp'); await check(n); }
+  for (let n = 9; n >= 1; n--) { await page.click('#qm'); await check(n); }
+  await page.fill('#q', '3');
+  expect(await total(page)).toBe('$157'); // 165 × 0.95 = 156.75, shown rounded
+});
+
+test('quantity: empty, fractional and invalid values are explained and block the quote', async ({ page }) => {
+  await toCalc(page);
+  for (const [v, msg] of [['', 'Enter how many'], ['2.5', 'whole number'], ['abc', 'digits only'], ['0', 'minimum is 1'], ['5000', 'more than 999']]) {
+    await page.fill('#q', v);
+    await expect(page.locator('#q')).toHaveValue(v); // the field is never overwritten while typing
+    await expect(page.locator('#qErr')).toContainText(msg);
+    await expect(page.locator('#total')).toHaveText('—');
+    await page.click('#open');
+    await expect(page.locator('#modal')).toBeHidden();
+  }
+  await page.fill('#q', '4');
+  await expect(page.locator('#qErr')).toHaveText('');
+  expect(await total(page)).toBe('$209'); // 220 × 0.95
+});
+
+test('keychains, mixed order, per-figure setup and extras', async ({ page }) => {
+  await toCalc(page);
+  await page.click('#tKey'); await page.click('#tFig'); // keychains only
+  expect(await total(page)).toBe('$45');
+  await page.click('[data-g="pack"][data-id="20"]');
+  expect(await total(page)).toBe('$80');
+  await page.click('[data-g="kx"][data-id="rush"]');
+  expect(await total(page)).toBe('$92'); // 80 × 1.15
+  await page.click('#tFig'); // mixed
+  expect(await total(page)).toBe('$147'); // 55 + 92
+  await page.fill('#q', '3');
+  await page.check('#custom');
+  await page.locator('details.item[data-n="1"] summary').click();
+  await page.click('details.item[data-n="1"] [data-g="size"][data-id="25"]');
+  await page.click('[data-g="fx"][data-id="edit"]');
+  // (55 + 95 + 55) × 0.95 = 194.75, + edit $20 = 214.75 → $215; + keychains $92
+  expect(await total(page)).toBe('$307');
+  await page.click('#open');
+  await expect(page.locator('#mlist')).toContainText('#2: 25 cm');
+  await expect(page.locator('#mtotal')).toHaveText('$307');
+});
+
+test('portfolio → card → Order one like this → quote carries exactly the card setup', async ({ page }) => {
+  const calls = await mockApi(page);
+  await toCalc(page);
+  await page.click('#tKey'); for (let i = 0; i < 3; i++) await page.click('#qp'); // leftovers that must not leak
+  await page.locator('#portfolio').scrollIntoViewIfNeeded();
+  await expect(page.locator('#deck')).toHaveClass(/ready/, { timeout: 8000 });
+  await page.click('#dnext'); // Plano → Graffiti Hood (15 cm, Complex, Painted)
+  await page.waitForTimeout(700);
+  await page.locator('.cc.front').click();
+  await expect(page.locator('#pm')).toBeVisible();
+  await expect(page.locator('#pname')).toHaveText('Graffiti Hood');
+  await expect(page.locator('#pspecs')).toContainText('15 cm / 5.9 in');
+  await page.click('#porder');
+  await expect(page.locator('#modal')).toBeVisible();
+  await expect(page.locator('#mlist')).toContainText('Figure · 15 cm / 5.9 in');
+  await expect(page.locator('#mlist')).toContainText('Complex details');
+  await expect(page.locator('#mlist')).toContainText('Painted');
+  await expect(page.locator('#mlist')).toContainText('Quantity 1');
+  await expect(page.locator('#mlist')).not.toContainText('Keychains');
+  await expect(page.locator('#mtotal')).toHaveText('$55');
+  // close, change the choice, reopen: the quote follows the new choice
+  await page.click('#close');
+  await page.click('#qp');
+  await page.click('#open');
+  await expect(page.locator('#mtotal')).toHaveText('$110');
+  await page.fill('#ig', '@graffiti.fan');
+  await page.click('#send');
+  await expect(page.locator('#done')).toBeVisible();
+  expect(calls[0].instagram).toBe('graffiti.fan');
+  expect(calls[0].price).toBe('$110');
+});
+
+test('request: nickname validation, sending state, network error, retry without a duplicate', async ({ page }) => {
+  const calls = await mockApi(page, ['network', 'slow']);
+  await toCalc(page);
+  await page.click('#open');
+  for (const [v, msg] of [['', 'Enter your Instagram'], ['bad name', 'Use only letters'], ['.dot', 'period'], ['a'.repeat(31), '30 characters']]) {
+    await page.fill('#ig', v); await page.click('#send');
+    await expect(page.locator('#err')).toContainText(msg);
+  }
+  expect(calls).toHaveLength(0);
+  await page.fill('#ig', 'https://www.instagram.com/real.buyer_7/');
+  await page.click('#send');
+  await expect(page.locator('#fail')).toBeVisible();
+  await page.click('#retry');
+  await expect(page.locator('#retry')).toHaveText('Sending…');
+  await expect(page.locator('#retry')).toBeDisabled();
+  await expect(page.locator('#done')).toBeVisible();
+  expect(calls).toHaveLength(2);
+  expect(calls[0].instagram).toBe('real.buyer_7');
+  expect(calls[1].requestId).toBe(calls[0].requestId); // same id → the server answers a retry from memory
+  await page.click('#back');
+  await expect(page.locator('#modal')).toBeHidden();
+});
+
+test('no horizontal scroll and the hero shows the product with a clear next step', async ({ page }) => {
+  await page.goto('/index.html');
+  await expect(page.locator('.hero-photo')).toBeVisible();
+  await expect(page.locator('.hero-cta')).toContainText('Turn your character into a hand-painted collectible.');
+  await expect(page.locator('.hero-cta .btn')).toBeInViewport();
+  for (const y of [0, 0.25, 0.5, 0.75, 1]) {
+    await page.evaluate((k) => scrollTo(0, (document.body.scrollHeight - innerHeight) * k), y);
+    await page.waitForTimeout(150);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  }
+});
+
+test('model files fail to load: photos stay, loader and drag hints disappear', async ({ page }) => {
+  await page.route('**/*.glb', (r) => r.abort('failed'));
+  await page.goto('/index.html');
+  await page.waitForTimeout(1500);
+  await expect(page.locator('body')).not.toHaveClass(/hero3d/);
+  await expect(page.locator('.hero-photo')).toBeVisible();
+  await page.locator('#portfolio').scrollIntoViewIfNeeded();
+  await expect(page.locator('#deck')).toHaveClass(/ready/, { timeout: 8000 });
+  await page.locator('.cc.front').click();
+  await expect(page.locator('#viewer')).toHaveCount(0, { timeout: 5000 }); // the 3D slide removes itself
+  await expect(page.locator('#slides')).not.toContainText('Loading');
+  await expect(page.locator('#slides')).not.toContainText('Drag');
+  await page.click('#pclose');
+  await page.locator('#price').scrollIntoViewIfNeeded();
+  await expect(page.locator('#vposter')).toBeVisible();
+  await expect(page.locator('#calcView .spin')).toBeHidden();
+});
+
+test('3D works: hero swaps in, viewer opens for several cards, calculator preview tools', async ({ page }) => {
+  test.slow();
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/index.html');
+  await expect(page.locator('body')).toHaveClass(/hero3d/, { timeout: 60_000 });
+  await page.locator('#portfolio').scrollIntoViewIfNeeded();
+  await expect(page.locator('#deck')).toHaveClass(/ready/, { timeout: 8000 });
+  const names = ['Plano', 'Graffiti Hood', 'White Angel'];
+  for (let k = 0; k < 3; k++) {
+    await page.locator('.cc.front').click();
+    await expect(page.locator('#pm')).toBeVisible();
+    await expect(page.locator('#pname')).toHaveText(names[k]);
+    await expect(page.locator('#pm #viewer')).toHaveClass(/ready/, { timeout: 40_000 });
+    const box = await page.locator('#viewer').boundingBox();
+    if (!box) throw new Error('viewer not visible on card ' + k + ': ' + await page.locator('#pname').innerText());
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down(); await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 6 }); await page.mouse.up();
+    await page.mouse.wheel(0, -300);
+    await page.click('#pclose');
+    await expect(page.locator('#pm')).toBeHidden();
+    await page.click('#dnext'); await page.waitForTimeout(700);
+  }
+  await page.locator('#price').scrollIntoViewIfNeeded();
+  await expect(page.locator('#calcView')).toHaveClass(/ready3d/, { timeout: 60_000 });
+  await page.click('#vzin'); await page.click('#vfull');
+  await expect(page.locator('#calcView')).toHaveClass(/full/);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#calcView')).not.toHaveClass(/full/);
+  expect(errors).toEqual([]);
+});
