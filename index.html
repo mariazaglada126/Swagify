@@ -198,6 +198,46 @@ legend{font-weight:700;font-size:15px;margin-bottom:12px}
 footer{border-top:2px solid var(--coal);padding:24px 0 40px;font-size:14px;color:#9a9a9a}
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
 
+#process .phero{background:var(--cyan);color:var(--ink);padding:clamp(48px,7vw,90px) 0 0;overflow:hidden}
+#process .ptitle{font-size:clamp(48px,9vw,128px);line-height:.88;color:#fff;text-shadow:.03em .035em 0 var(--navy),.06em .07em 0 var(--ink)}
+#process .lead{max-width:52ch;font-size:19px;margin:22px 0 0}
+#process .strip{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:end;gap:8px;margin-top:40px}
+#process .strip figure{margin:0;text-align:center}
+#process .strip img{width:100%;height:clamp(240px,34vw,460px);object-fit:contain;object-position:center bottom;display:block}
+#process .strip figcaption{display:inline-block;margin:10px 0 22px;background:var(--ink);color:#fff;font-weight:700;font-size:14px;padding:6px 14px;border-radius:999px}
+#process .strip .arrow{align-self:center;color:var(--ink)}
+#process .strip .sketch{background:#fff;border-radius:26px 26px 0 0}
+
+#process .steps{padding:clamp(64px,9vw,120px) 0}
+#process .steps-h{font-size:clamp(36px,5vw,64px);line-height:.95;margin-bottom:40px}
+#process ol{list-style:none;margin:0;padding:0;position:relative}
+#process ol::before{content:'';position:absolute;left:35px;top:20px;bottom:20px;width:3px;background:linear-gradient(var(--cyan),var(--navy))}
+#process ol>li{position:relative;display:grid;grid-template-columns:72px 1fr;gap:24px;padding:0 0 34px}
+#process .num{width:72px;height:72px;border-radius:50%;background:var(--ink);border:3px solid var(--cyan);display:grid;place-items:center;font:400 24px 'Archivo Black',sans-serif;color:var(--cyan);position:relative;z-index:1}
+#process .pcard{background:#1d1d1d;border:2px solid var(--coal);border-radius:26px;padding:24px 26px;display:flex;flex-wrap:wrap;gap:20px 28px;align-items:center}
+#process .pcard .txt{flex:999 1 320px}
+#process .pcard h3{margin:0 0 6px;font:400 clamp(22px,2.4vw,30px)/1.1 'Archivo Black',sans-serif;text-transform:uppercase}
+#process .pcard p{margin:0;color:#cfcfcf;max-width:60ch}
+#process .pcard ul{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+#process .pcard ul li{display:block;padding:6px 14px;border-radius:999px;background:#2a2a2a;color:#fff;font-size:14px;font-weight:700}
+#process .pcard .pic{flex:1 1 180px;max-width:220px;height:200px;border-radius:20px;background:var(--paper);display:grid;place-items:center;overflow:hidden}
+#process .pcard .pic img{height:96%;width:100%;object-fit:contain;object-position:center bottom;align-self:end}
+#process .pcard .badge{flex:none;width:84px;height:84px;border-radius:50%;background:var(--cyan);color:var(--ink);display:grid;place-items:center}
+#process .pcard .badge svg{width:38px;height:38px}
+#process .pcard .btn{font-size:16px;min-height:48px;padding:10px 20px;background:var(--cyan);color:var(--ink)}
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s,transform .7s cubic-bezier(.19,1,.22,1)}
+.reveal.in{opacity:1;transform:none}
+#process .phero{border-radius:36px;margin:0 max(3vw,12px);padding:clamp(40px,6vw,80px) 0 0}
+#process .ptitle{font-family:'Archivo Black',sans-serif;font-weight:400;text-transform:uppercase;margin:0}
+@media(max-width:700px){#process .strip{grid-template-columns:1fr 1fr 1fr;gap:4px}#process .strip .arrow{display:none}#process .strip figcaption{font-size:12px;padding:4px 10px}
+#process ol::before{left:23px}#process ol>li{grid-template-columns:48px 1fr;gap:14px}#process .num{width:48px;height:48px;font-size:17px}#process .pcard{padding:20px}#process .pcard .pic{max-width:none}}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+.state{display:flex;flex-direction:column;gap:12px}
+.state .ico{width:64px;height:64px;border-radius:50%;display:grid;place-items:center}
+.state.ok .ico{background:var(--cyan)}.state.bad .ico{background:#f6d3d1;color:#b3261e}
+.state .row{display:flex;flex-wrap:wrap;gap:10px}
+.state .btn.ghost{background:#fff;color:var(--ink);box-shadow:none}
+
 /* request modal */
 .modal{position:fixed;inset:0;z-index:50;background:rgba(10,10,10,.82);display:grid;place-items:center;padding:20px}
 .dialog{position:relative;width:100%;max-width:520px;background:var(--paper);color:var(--ink);border-radius:28px;box-shadow:8px 10px 0 var(--cyan);padding:34px}
@@ -228,7 +268,7 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
   <a href="#hero" aria-label="Swagify home"><img src="logo-white.svg" alt="Swagify — handmade figures"></a>
   <div class="links">
     <a href="#portfolio">Portfolio</a>
-    <a href="process.html">Process</a>
+    <a href="#process">Process</a>
     <a href="#price">Price</a>
     <a href="#contacts">Contacts</a>
     <a class="ig" href="https://www.instagram.com/swagify.figures?fqnt=MTljNGg2ZjVyc2t6Zw%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener" aria-label="Swagify on Instagram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r=".6" fill="currentColor"/></svg></a>
@@ -327,6 +367,49 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
   </div>
 </section>
 
+<section id="process" class="band" aria-labelledby="procTitle">
+  <div class="phero" style="background:var(--cyan);color:var(--ink)">
+  <div class="wrap">
+    <h2 class="ptitle">How it works</h2>
+    <p class="lead">From your idea to a figure on your shelf. Every piece is made by hand, and you see and approve each stage before we move on.</p>
+    <div class="strip" aria-label="One figure at three stages">
+      <figure><img class="sketch" src="step-concept.webp" alt="2D concept sketch of a hooded figure"><figcaption>2D concept</figcaption></figure>
+      <svg class="arrow icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      <figure><img src="step-3d.webp" alt="Grey 3D model of the same figure"><figcaption>3D model</figcaption></figure>
+      <svg class="arrow icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      <figure><img src="step-figure.webp" alt="Finished, painted figure"><figcaption>Finished figure</figcaption></figure>
+    </div>
+  </div>
+</div>
+  <div class="steps"><div class="wrap">
+    <h2 class="steps-h" id="procTitle">Seven steps to your figure</h2>
+    <ol>
+      <li class="reveal"><span class="num">01</span><div class="pcard">
+        <div class="txt"><h3>Build your order</h3><p>Pick the quantity and the main options in the calculator: size, details, painting, figures or keychains. You’ll see an estimated price right away.</p></div>
+        <a class="btn" href="#price">Open the calculator</a></div></li>
+      <li class="reveal"><span class="num">02</span><div class="pcard">
+        <div class="txt"><h3>Let’s talk in DM</h3><p>We message you on Instagram and go through every idea in detail: pose, outfit, colors, accessories, mood.</p></div>
+        <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></span></div></li>
+      <li class="reveal"><span class="num">03</span><div class="pcard">
+        <div class="txt"><h3>Send references</h3><p>The more we see, the closer the result. Send photos from a few angles and any style references you like.</p>
+          <ul><li>A person</li><li>A character</li><li>A pet</li><li>An object</li><li>Style refs</li></ul></div>
+        <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-5-8 8"/></svg></span></div></li>
+      <li class="reveal"><span class="num">04</span><div class="pcard">
+        <div class="txt"><h3>2D concept</h3><p>We draw a concept of your figure. You check it and ask for changes until it feels right.</p></div>
+        <div class="pic"><img src="step-concept.webp" alt="" loading="lazy"></div></div></li>
+      <li class="reveal"><span class="num">05</span><div class="pcard">
+        <div class="txt"><h3>3D model</h3><p>The approved concept becomes a 3D model. We show it to you from every side before anything is made.</p></div>
+        <div class="pic"><img src="step-3d.webp" alt="" loading="lazy"></div></div></li>
+      <li class="reveal"><span class="num">06</span><div class="pcard">
+        <div class="txt"><h3>Your figure + approval</h3><p>We make and paint the figure by hand, then send you photos or a video so you can approve it before shipping.</p></div>
+        <div class="pic"><img src="step-figure.webp" alt="" loading="lazy"></div></div></li>
+      <li class="reveal"><span class="num">07</span><div class="pcard">
+        <div class="txt"><h3>Shipping</h3><p>We pack your figure carefully and ship it to you.</p></div>
+        <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span></div></li>
+    </ol>
+  </div></div>
+</section>
+
 <section id="contacts" class="contacts band">
   <div class="wrap">
     <h2>Slide into<br><span>the DMs.</span></h2>
@@ -366,10 +449,20 @@ label{display:block;font-weight:700;font-size:14px;margin:18px 0 8px}
       <p class="err" id="err" role="alert"></p>
       <button class="btn" type="submit">Send request</button>
     </form>
-    <div id="done" hidden>
+    <div id="done" class="state ok" hidden>
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#141414" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
       <h3>Request sent ★</h3>
-      <p id="dline"></p>
-      <button class="btn" type="button" id="back">Back to site</button>
+      <p id="dline" style="margin:0"></p>
+      <button class="btn" type="button" id="back">See what happens next</button>
+    </div>
+    <div id="fail" class="state bad" hidden>
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 7v6M12 17h.01"/></svg></span>
+      <h3>Request not sent</h3>
+      <p style="margin:0">Something went wrong and your request didn’t reach us. Please try again, or message us on Instagram — we’ll answer there.</p>
+      <div class="row">
+        <button class="btn" type="button" id="retry">Try again</button>
+        <a class="btn ghost" href="https://www.instagram.com/swagify.figures?fqnt=MTljNGg2ZjVyc2t6Zw%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener">@swagify.figures</a>
+      </div>
     </div>
   </div>
 </div>
@@ -643,26 +736,38 @@ $('porder').addEventListener('click',()=>{
 });
 
 /* ---------- request modal ---------- */
-const modal=$('modal'),form=$('form'),done=$('done'),ig=$('ig'),err=$('err');
-function openReq(){if(S.ok===false){$('calcErr').focus&&$('batches').scrollIntoView({block:'center',behavior:'smooth'});return}form.hidden=false;done.hidden=true;err.textContent='';
+const modal=$('modal'),form=$('form'),done=$('done'),fail=$('fail'),ig=$('ig'),err=$('err');let sent=false;
+function show(v){form.hidden=v!=='form';done.hidden=v!=='done';fail.hidden=v!=='fail'}
+function openReq(){if(S.ok===false){$('calcErr').scrollIntoView({block:'center',behavior:'smooth'});return}
+  sent=false;show('form');err.textContent='';
   $('mline').textContent=`Your order: ${S.lines.join(', ')} — ${S.from?'from ':''}$${S.total}. We’ll DM you on Instagram to talk details.`;
   modal.hidden=false;ig.focus()}
-function closeReq(){modal.hidden=true;$('open').focus()}
+function closeReq(){
+  modal.hidden=true;
+  if(sent){sent=false;const pr=$('process');pr.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});setTimeout(()=>{const h=$('procTitle');h.setAttribute('tabindex','-1');h.focus({preventScroll:true})},700)}
+  else $('open').focus();
+}
 $('open').addEventListener('click',openReq);$('close').addEventListener('click',closeReq);$('back').addEventListener('click',closeReq);
+$('retry').addEventListener('click',()=>{show('form');ig.focus()});
 modal.addEventListener('click',e=>{if(e.target===modal)closeReq()});
 modal.addEventListener('keydown',e=>{if(e.key==='Escape')closeReq()});
 form.addEventListener('submit',e=>{
   e.preventDefault();
   const n=ig.value.trim().replace(/^@/,'');
   if(!/^[A-Za-z0-9._]{1,30}$/.test(n)){err.textContent='Enter your Instagram nickname: letters, numbers, dots or underscores.';return}
+  err.textContent='';
   const btn=form.querySelector('button[type=submit]');btn.disabled=true;btn.textContent='Sending…';
   fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instagram:n,lines:S.lines,price:`${S.from?'from ':''}$${S.total}`})})
-    .then(r=>{if(!r.ok)throw 0;
-      form.hidden=true;done.hidden=false;
-      $('dline').textContent=`Thanks, @${n}! Your request is sent. Watch your Instagram DMs — we’ll reach out about your order (${S.lines[0]}, ${S.from?'from ':''}$${S.total}).`})
-    .catch(()=>{err.innerHTML='Couldn’t send right now. Please DM us on Instagram: <a href="https://www.instagram.com/swagify.figures" target="_blank" rel="noopener">@swagify.figures</a>'})
+    .then(r=>{if(!r.ok)throw 0;sent=true;
+      $('dline').textContent=`Thanks, @${n}! We got your request (${S.lines[0]}, ${S.from?'from ':''}$${S.total}). Watch your Instagram DMs — we’ll reach out soon to talk through your idea.`;
+      show('done');$('back').focus()})
+    .catch(()=>{show('fail');$('retry').focus()})
     .finally(()=>{btn.disabled=false;btn.textContent='Send request'});
 });
+/* reveal steps on scroll */
+{const els=document.querySelectorAll('.reveal');
+if(reduce||!('IntersectionObserver' in window))els.forEach(e=>e.classList.add('in'));
+else{const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.2});els.forEach(e=>io.observe(e))}}
 }
 </script>
 <script src="app.js"></script>
