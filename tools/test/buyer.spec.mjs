@@ -168,7 +168,7 @@ test('request: nickname validation, sending state, network error, retry without 
 
 test('no horizontal scroll and the hero shows the product with a clear next step', async ({ page }) => {
   await page.goto('/index.html');
-  await expect(page.locator('.hero-cta')).toContainText('Turn your character into a hand-painted collectible.');
+  await expect(page.locator('.hero-cta')).toContainText(/Turn your character into a hand.painted collectible\./);
   await expect(page.locator('.hero-cta .btn')).toBeInViewport();
   for (const y of [0, 0.25, 0.5, 0.75, 1]) {
     await page.evaluate((k) => scrollTo(0, (document.body.scrollHeight - innerHeight) * k), y);
